@@ -268,7 +268,22 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                     contract.comments
                   )}
                 </TableCell>
-                <TableCell>{contract.history[0]?.username}</TableCell>
+                <TableCell
+                  className="cursor-pointer"
+                  onDoubleClick={() => handleDoubleClick(contract, 'lawyerId')}
+                >
+                  {editingCell?.id === contract.id && editingCell.field === 'lawyerId' ? (
+                    <Input
+                      value={editingCell.value}
+                      onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                      onBlur={() => handleCellChange(contract)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
+                      autoFocus
+                    />
+                  ) : (
+                    contract.history[0]?.username || 'Не указан'
+                  )}
+                </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
