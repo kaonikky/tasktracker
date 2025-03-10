@@ -54,8 +54,8 @@ export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
     throw new Error("Google Sheets ID not configured");
   }
 
-  // Используем публичный доступ к таблице
-  const endpoint = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json`;
+  // Используем CSV формат для доступа к таблице
+  const endpoint = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv`;
   console.log('Fetching from endpoint:', endpoint);
 
   try {
@@ -69,31 +69,30 @@ export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
     }
 
     const text = await response.text();
-    // Удаляем префикс "google.visualization.Query.setResponse(" и суффикс ");"
-    const jsonText = text.substring(47, text.length - 2);
-    const data = JSON.parse(jsonText);
+    console.log('Received data:', text.substring(0, 100) + '...');
 
-    console.log('Received data structure:', data);
+    // Разбираем CSV
+    const rows = text.split('\n').map(row => row.split(',').map(cell => 
+      cell.trim().replace(/^"(.*)"$/, '$1') // Убираем кавычки если они есть
+    ));
 
-    if (!data.table || !data.table.rows) {
+    if (rows.length <= 1) {
       console.log('No data rows found in sheet');
       return [];
     }
 
     // Пропускаем заголовок
-    const contracts = data.table.rows.slice(1).map((row: any, index: number) => {
+    const contracts = rows.slice(1).map((row, index) => {
       console.log(`Processing row ${index + 1}:`, row);
 
-      const values = row.c.map((cell: any) => cell ? cell.v : null);
-
       const contract = {
-        companyName: values[0] || "",
-        inn: values[1] ? String(values[1]) : "",
-        director: values[2] || "",
-        address: values[3] || "",
-        endDate: values[4] ? new Date(values[4]) : new Date(),
-        comments: values[5] || "",
-        hasND: values[6] === true || values[6] === "true",
+        companyName: row[0] || "",
+        inn: row[1] ? String(row[1]) : "",
+        director: row[2] || "",
+        address: row[3] || "",
+        endDate: row[4] ? new Date(row[4]) : new Date(),
+        comments: row[5] || "",
+        hasND: row[6] === "true" || row[6] === "1",
         lawyerId: 1 // По умолчанию присваиваем первому юристу
       };
 
