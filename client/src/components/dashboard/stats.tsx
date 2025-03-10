@@ -15,7 +15,7 @@ export function Stats() {
     <div className="grid gap-4 md:grid-cols-3">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Contracts</CardTitle>
+          <CardTitle className="text-sm font-medium">Всего договоров</CardTitle>
           <CheckCircle className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -25,7 +25,7 @@ export function Stats() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
+          <CardTitle className="text-sm font-medium">Истекают</CardTitle>
           <CalendarClock className="h-4 w-4 text-yellow-500" />
         </CardHeader>
         <CardContent>
@@ -35,7 +35,7 @@ export function Stats() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Expired</CardTitle>
+          <CardTitle className="text-sm font-medium">Истекли</CardTitle>
           <XCircle className="h-4 w-4 text-red-500" />
         </CardHeader>
         <CardContent>

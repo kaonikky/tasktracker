@@ -39,7 +39,7 @@ export function ContractTable({ onEdit }: ContractTableProps) {
     return <div>Loading contracts...</div>;
   }
 
-  const filteredContracts = contracts?.filter(contract => 
+  const filteredContracts = contracts?.filter(contract =>
     contract.companyName.toLowerCase().includes(search.toLowerCase()) ||
     contract.inn.includes(search) ||
     contract.contractNumber.toLowerCase().includes(search.toLowerCase())
@@ -65,7 +65,7 @@ export function ContractTable({ onEdit }: ContractTableProps) {
     <div>
       <div className="mb-4">
         <Input
-          placeholder="Search contracts..."
+          placeholder="Поиск договоров..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
@@ -76,13 +76,15 @@ export function ContractTable({ onEdit }: ContractTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Contract Number</TableHead>
-              <TableHead>Company</TableHead>
-              <TableHead>INN</TableHead>
-              <TableHead>End Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Lawyer</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
+              <TableHead>№ Договора</TableHead>
+              <TableHead>Компания</TableHead>
+              <TableHead>ИНН</TableHead>
+              <TableHead>Руководитель</TableHead>
+              <TableHead>Адрес</TableHead>
+              <TableHead>Дата окончания</TableHead>
+              <TableHead>Статус</TableHead>
+              <TableHead>Комментарии</TableHead>
+              <TableHead className="w-[100px]">Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -91,6 +93,8 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                 <TableCell>{contract.contractNumber}</TableCell>
                 <TableCell>{contract.companyName}</TableCell>
                 <TableCell>{contract.inn}</TableCell>
+                <TableCell>{contract.director}</TableCell>
+                <TableCell>{contract.address}</TableCell>
                 <TableCell>
                   {format(new Date(contract.endDate), "dd.MM.yyyy")}
                 </TableCell>
@@ -101,10 +105,12 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                       contract.status === "expiring_soon" ? "bg-yellow-100 text-yellow-800" :
                       "bg-green-100 text-green-800"}`}
                   >
-                    {contract.status.replace("_", " ")}
+                    {contract.status === "expired" ? "Истёк" :
+                     contract.status === "expiring_soon" ? "Истекает" :
+                     "Активен"}
                   </div>
                 </TableCell>
-                <TableCell>{contract.lawyerId}</TableCell>
+                <TableCell>{contract.comments}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -115,15 +121,15 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => onEdit(contract)}>
                         <Edit className="mr-2 h-4 w-4" />
-                        Edit
+                        Редактировать
                       </DropdownMenuItem>
                       {user?.role === "admin" && (
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           className="text-red-600"
                           onClick={() => setDeleteConfirm(contract.id)}
                         >
                           <Trash className="mr-2 h-4 w-4" />
-                          Delete
+                          Удалить
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
@@ -138,13 +144,13 @@ export function ContractTable({ onEdit }: ContractTableProps) {
       <AlertDialog open={deleteConfirm !== null} onOpenChange={() => setDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the contract.
+              Это действие нельзя отменить. Договор будет удален безвозвратно.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600"
               onClick={() => {
@@ -154,7 +160,7 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                 }
               }}
             >
-              Delete
+              Удалить
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

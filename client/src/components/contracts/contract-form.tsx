@@ -78,7 +78,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
           name="contractNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Contract Number</FormLabel>
+              <FormLabel>Номер договора</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -92,7 +92,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
           name="inn"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>INN</FormLabel>
+              <FormLabel>ИНН</FormLabel>
               <div className="flex gap-2">
                 <FormControl>
                   <Input {...field} />
@@ -106,7 +106,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
                   {isLoadingDadata ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    "Autofill"
+                    "Заполнить"
                   )}
                 </Button>
               </div>
@@ -120,7 +120,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
           name="companyName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Company Name</FormLabel>
+              <FormLabel>Название компании</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -134,7 +134,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
           name="director"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Director</FormLabel>
+              <FormLabel>Руководитель</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -148,7 +148,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
           name="address"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Address</FormLabel>
+              <FormLabel>Адрес</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -162,7 +162,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
           name="endDate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>End Date</FormLabel>
+              <FormLabel>Дата окончания</FormLabel>
               <FormControl>
                 <Input type="date" {...field} />
               </FormControl>
@@ -176,7 +176,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
           name="comments"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Comments</FormLabel>
+              <FormLabel>Комментарии</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -187,7 +187,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
 
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
+            Отмена
           </Button>
           <Button
             type="submit"
@@ -196,7 +196,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
             {createContract.isPending || updateContract.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : null}
-            {contract ? "Update Contract" : "Create Contract"}
+            {contract ? "Обновить договор" : "Создать договор"}
           </Button>
         </div>
       </form>

@@ -53,13 +53,13 @@ export default function AuthPage() {
       <div className="flex items-center justify-center p-8">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Contract Management System</CardTitle>
+            <CardTitle>Система управления договорами</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+                <TabsTrigger value="login">Вход</TabsTrigger>
+                <TabsTrigger value="register">Регистрация</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
@@ -71,7 +71,7 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Имя пользователя</FormLabel>
                             <FormControl>
                               <Input {...field} />
                             </FormControl>
@@ -84,7 +84,7 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel>Пароль</FormLabel>
                             <FormControl>
                               <Input type="password" {...field} />
                             </FormControl>
@@ -97,7 +97,7 @@ export default function AuthPage() {
                         className="w-full"
                         disabled={loginMutation.isPending}
                       >
-                        {loginMutation.isPending ? "Logging in..." : "Login"}
+                        {loginMutation.isPending ? "Вход..." : "Войти"}
                       </Button>
                     </div>
                   </form>
@@ -113,7 +113,7 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Имя пользователя</FormLabel>
                             <FormControl>
                               <Input {...field} />
                             </FormControl>
@@ -126,7 +126,7 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel>Пароль</FormLabel>
                             <FormControl>
                               <Input type="password" {...field} />
                             </FormControl>
@@ -139,16 +139,16 @@ export default function AuthPage() {
                         name="role"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Role</FormLabel>
+                            <FormLabel>Роль</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select a role" />
+                                  <SelectValue placeholder="Выберите роль" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="lawyer">Lawyer</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="lawyer">Юрист</SelectItem>
+                                <SelectItem value="admin">Администратор</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -160,7 +160,7 @@ export default function AuthPage() {
                         className="w-full"
                         disabled={registerMutation.isPending}
                       >
-                        {registerMutation.isPending ? "Creating account..." : "Register"}
+                        {registerMutation.isPending ? "Создание аккаунта..." : "Зарегистрироваться"}
                       </Button>
                     </div>
                   </form>
@@ -173,11 +173,11 @@ export default function AuthPage() {
       <div className="hidden lg:flex items-center justify-center bg-muted p-8">
         <div className="max-w-lg">
           <h1 className="text-4xl font-bold mb-4">
-            Welcome to Contract Management
+            Система управления договорами
           </h1>
           <p className="text-muted-foreground text-lg">
-            A comprehensive solution for managing contracts with Google Sheets integration.
-            Track contract statuses, manage deadlines, and collaborate with your team efficiently.
+            Комплексное решение для управления договорами с интеграцией Google Sheets.
+            Отслеживайте статусы договоров, управляйте сроками и эффективно работайте в команде.
           </p>
         </div>
       </div>
