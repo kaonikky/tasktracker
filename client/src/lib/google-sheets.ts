@@ -45,60 +45,55 @@ export async function syncWithGoogleSheets(contracts: Contract[]) {
 }
 
 export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
-  const apiKey = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY;
   const spreadsheetId = import.meta.env.VITE_GOOGLE_SHEETS_ID;
 
   console.log('Starting Google Sheets import');
-  console.log('API Key present:', !!apiKey);
   console.log('Spreadsheet ID present:', !!spreadsheetId);
 
-  if (!apiKey || !spreadsheetId) {
-    throw new Error("Google Sheets API not configured");
+  if (!spreadsheetId) {
+    throw new Error("Google Sheets ID not configured");
   }
 
-  const endpoint = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:Z1000`;
+  // Используем публичный доступ к таблице
+  const endpoint = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json`;
   console.log('Fetching from endpoint:', endpoint);
 
   try {
-    // Добавляем key как параметр запроса
-    const response = await fetch(`${endpoint}?key=${apiKey}`, {
-      headers: {
-        'Accept': 'application/json',
-      }
-    });
+    const response = await fetch(endpoint);
     console.log('Response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Google Sheets API error response:', errorText);
+      console.error('Google Sheets error response:', errorText);
       throw new Error(`Failed to fetch data from Google Sheets: ${errorText}`);
     }
 
-    const data = await response.json();
-    console.log('Received data structure:', {
-      hasValues: !!data.values,
-      rowCount: data.values?.length || 0
-    });
+    const text = await response.text();
+    // Удаляем префикс "google.visualization.Query.setResponse(" и суффикс ");"
+    const jsonText = text.substring(47, text.length - 2);
+    const data = JSON.parse(jsonText);
 
-    const rows = data.values || [];
+    console.log('Received data structure:', data);
 
-    if (rows.length <= 1) {
+    if (!data.table || !data.table.rows) {
       console.log('No data rows found in sheet');
       return [];
     }
 
     // Пропускаем заголовок
-    const contracts = rows.slice(1).map((row, index) => {
+    const contracts = data.table.rows.slice(1).map((row: any, index: number) => {
       console.log(`Processing row ${index + 1}:`, row);
 
+      const values = row.c.map((cell: any) => cell ? cell.v : null);
+
       const contract = {
-        companyName: row[0] || "",
-        inn: row[1] || "",
-        director: row[2] || "",
-        address: row[3] || "",
-        endDate: row[4] ? new Date(row[4]) : new Date(),
-        comments: row[5] || "",
-        hasND: row[6] === "true",
+        companyName: values[0] || "",
+        inn: values[1] ? String(values[1]) : "",
+        director: values[2] || "",
+        address: values[3] || "",
+        endDate: values[4] ? new Date(values[4]) : new Date(),
+        comments: values[5] || "",
+        hasND: values[6] === true || values[6] === "true",
         lawyerId: 1 // По умолчанию присваиваем первому юристу
       };
 
