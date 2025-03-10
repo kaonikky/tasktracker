@@ -32,18 +32,34 @@ export default function HomePage() {
   const handleImport = async () => {
     try {
       setIsImporting(true);
-      const contracts = await importFromGoogleSheets();
+      console.log('Starting import process');
 
+      const contracts = await importFromGoogleSheets();
+      console.log(`Retrieved ${contracts.length} contracts from Google Sheets`);
+
+      let importedCount = 0;
       // Последовательно создаем контракты
       for (const contract of contracts) {
-        await createContract.mutateAsync(contract);
+        try {
+          await createContract.mutateAsync(contract);
+          importedCount++;
+          console.log(`Successfully imported contract ${importedCount}/${contracts.length}`);
+        } catch (error) {
+          console.error('Error importing contract:', error);
+          toast({
+            title: "Предупреждение",
+            description: `Ошибка при импорте контракта ${importedCount + 1}`,
+            variant: "destructive",
+          });
+        }
       }
 
       toast({
         title: "Успех",
-        description: `Импортировано ${contracts.length} контрактов`,
+        description: `Импортировано ${importedCount} из ${contracts.length} контрактов`,
       });
     } catch (error) {
+      console.error('Import process error:', error);
       toast({
         title: "Ошибка импорта",
         description: error instanceof Error ? error.message : "Произошла ошибка при импорте",
@@ -63,8 +79,8 @@ export default function HomePage() {
             <span className="text-muted-foreground">
               {user?.username} ({user?.role})
             </span>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
             >
