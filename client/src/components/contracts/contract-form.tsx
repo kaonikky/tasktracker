@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useDadataSearch } from "@/lib/dadata";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 interface ContractFormProps {
   contract?: Contract | null;
@@ -38,38 +39,54 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
   });
 
   const inn = form.watch("inn");
-  const { data: dadataResult, isLoading: isLoadingDadata } = useDadataSearch(inn);
+  const { data: dadataResult, isLoading: isLoadingDadata, error: dadataError } = useDadataSearch(inn);
+
+  useEffect(() => {
+    if (dadataError) {
+      console.error('DADATA search error:', dadataError);
+      toast({
+        title: "Ошибка поиска",
+        description: "Не удалось получить данные о компании",
+        variant: "destructive",
+      });
+    }
+  }, [dadataError, toast]);
+
+  const handleAutofill = () => {
+    console.log('Attempting to autofill with data:', dadataResult);
+    if (dadataResult) {
+      form.setValue("companyName", dadataResult.name);
+      form.setValue("director", dadataResult.director);
+      form.setValue("address", dadataResult.address);
+      toast({
+        title: "Успех",
+        description: "Данные о компании заполнены",
+      });
+    }
+  };
 
   const onSubmit = async (data: InsertContract) => {
     try {
       if (contract) {
         await updateContract.mutateAsync({ id: contract.id, contract: data });
         toast({
-          title: "Success",
+          title: "Успех",
           description: "Договор успешно обновлен",
         });
       } else {
         await createContract.mutateAsync(data);
         toast({
-          title: "Success",
+          title: "Успех",
           description: "Договор успешно создан",
         });
       }
       onClose();
     } catch (error) {
       toast({
-        title: "Error",
+        title: "Ошибка",
         description: error instanceof Error ? error.message : "Произошла ошибка",
         variant: "destructive",
       });
-    }
-  };
-
-  const handleAutofill = () => {
-    if (dadataResult) {
-      form.setValue("companyName", dadataResult.name);
-      form.setValue("director", dadataResult.director);
-      form.setValue("address", dadataResult.address);
     }
   };
 

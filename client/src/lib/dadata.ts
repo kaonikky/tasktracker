@@ -8,10 +8,14 @@ interface CompanyInfo {
 }
 
 export async function searchCompanyByInn(inn: string): Promise<CompanyInfo> {
-  const token = process.env.VITE_DADATA_API_KEY;
+  const token = import.meta.env.VITE_DADATA_API_KEY;
+  console.log('Using DADATA API with token:', token ? 'Present' : 'Missing');
+
   if (!token) {
     throw new Error("DADATA API key not configured");
   }
+
+  console.log('Searching for company with INN:', inn);
 
   const response = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party", {
     method: "POST",
@@ -24,22 +28,28 @@ export async function searchCompanyByInn(inn: string): Promise<CompanyInfo> {
   });
 
   if (!response.ok) {
+    const error = await response.text();
+    console.error('DADATA API error:', error);
     throw new Error("Failed to fetch company info");
   }
 
   const data = await response.json();
+  console.log('DADATA API response:', data);
 
   if (!data.suggestions?.[0]) {
     throw new Error("Company not found");
   }
 
   const company = data.suggestions[0].data;
-  return {
+  const result = {
     name: company.name.short_with_opf || company.name.full_with_opf,
     inn: company.inn,
     director: company.management?.name || "Not specified",
     address: company.address.unrestricted_value || "Not specified"
   };
+
+  console.log('Parsed company info:', result);
+  return result;
 }
 
 export function useDadataSearch(inn: string) {
