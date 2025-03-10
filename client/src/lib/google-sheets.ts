@@ -68,7 +68,8 @@ export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
     const data = await response.json();
     console.log('Received data structure:', {
       hasValues: !!data.values,
-      rowCount: data.values?.length || 0
+      rowCount: data.values?.length || 0,
+      headers: data.values?.[0] || []
     });
 
     const rows = data.values || [];
@@ -82,19 +83,40 @@ export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
     const contracts = rows.slice(1).map((row, index) => {
       console.log(`Processing row ${index + 1}:`, row);
 
-      const contract = {
-        companyName: row[0] || "",
-        inn: row[1] || "",
-        director: row[2] || "",
-        address: row[3] || "",
-        endDate: row[4] ? new Date(row[4]) : new Date(),
-        comments: row[5] || "",
-        hasND: row[6] === "true",
-        lawyerId: 1 // По умолчанию присваиваем первому юристу
-      };
+      try {
+        let endDate = new Date();
+        if (row[4]) {
+          // Пробуем разные форматы даты
+          const dateParts = row[4].split('.');
+          if (dateParts.length === 3) {
+            // Формат ДД.ММ.ГГГГ
+            endDate = new Date(
+              parseInt(dateParts[2]), 
+              parseInt(dateParts[1]) - 1, 
+              parseInt(dateParts[0])
+            );
+          } else {
+            endDate = new Date(row[4]);
+          }
+        }
 
-      console.log(`Processed contract:`, contract);
-      return contract;
+        const contract = {
+          companyName: row[0] || "",
+          inn: row[1] || "",
+          director: row[2] || "",
+          address: row[3] || "",
+          endDate: endDate,
+          comments: row[5] || "",
+          hasND: row[6]?.toLowerCase() === "true",
+          lawyerId: 1 // По умолчанию присваиваем первому юристу
+        };
+
+        console.log(`Processed contract:`, contract);
+        return contract;
+      } catch (error) {
+        console.error(`Error processing row ${index + 1}:`, error);
+        throw new Error(`Failed to process row ${index + 1}: ${error.message}`);
+      }
     });
 
     console.log(`Successfully processed ${contracts.length} contracts`);
