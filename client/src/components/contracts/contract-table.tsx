@@ -42,6 +42,7 @@ export function ContractTable({ onEdit }: ContractTableProps) {
   const filteredContracts = contracts?.filter(contract =>
     contract.companyName.toLowerCase().includes(search.toLowerCase()) ||
     contract.inn.includes(search) ||
+    contract.director.toLowerCase().includes(search.toLowerCase()) ||
     contract.contractNumber.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -76,21 +77,21 @@ export function ContractTable({ onEdit }: ContractTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>№ Договора</TableHead>
               <TableHead>Компания</TableHead>
               <TableHead>ИНН</TableHead>
               <TableHead>Руководитель</TableHead>
               <TableHead>Адрес</TableHead>
               <TableHead>Дата окончания</TableHead>
               <TableHead>Статус</TableHead>
+              <TableHead>НД</TableHead>
               <TableHead>Комментарии</TableHead>
+              <TableHead>Юрист</TableHead>
               <TableHead className="w-[100px]">Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredContracts?.map((contract) => (
               <TableRow key={contract.id}>
-                <TableCell>{contract.contractNumber}</TableCell>
                 <TableCell>{contract.companyName}</TableCell>
                 <TableCell>{contract.inn}</TableCell>
                 <TableCell>{contract.director}</TableCell>
@@ -110,7 +111,11 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                      "Активен"}
                   </div>
                 </TableCell>
+                <TableCell>
+                  <div className={`w-4 h-4 rounded ${contract.hasND ? 'bg-red-500' : 'border border-gray-300'}`} />
+                </TableCell>
                 <TableCell>{contract.comments}</TableCell>
+                <TableCell>{contract.history[0]?.username}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

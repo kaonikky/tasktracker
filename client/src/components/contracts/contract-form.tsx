@@ -23,14 +23,14 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
   const form = useForm<InsertContract>({
     resolver: zodResolver(insertContractSchema),
     defaultValues: contract || {
-      contractNumber: "",
       companyName: "",
       inn: "",
       director: "",
       address: "",
       endDate: format(new Date(), "yyyy-MM-dd"),
       comments: "",
-      lawyerId: 0
+      lawyerId: 0,
+      hasND: false
     }
   });
 
@@ -43,20 +43,20 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
         await updateContract.mutateAsync({ id: contract.id, contract: data });
         toast({
           title: "Success",
-          description: "Contract updated successfully",
+          description: "Договор успешно обновлен",
         });
       } else {
         await createContract.mutateAsync(data);
         toast({
           title: "Success",
-          description: "Contract created successfully",
+          description: "Договор успешно создан",
         });
       }
       onClose();
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Произошла ошибка",
         variant: "destructive",
       });
     }
@@ -73,20 +73,6 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
-        <FormField
-          control={form.control}
-          name="contractNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Номер договора</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <FormField
           control={form.control}
           name="inn"
@@ -164,8 +150,31 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
             <FormItem>
               <FormLabel>Дата окончания</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Input
+                  type="date"
+                  {...field}
+                  value={field.value instanceof Date ? format(field.value, "yyyy-MM-dd") : field.value}
+                />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="hasND"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center gap-2">
+              <FormControl>
+                <input
+                  type="checkbox"
+                  checked={field.value}
+                  onChange={field.onChange}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+              </FormControl>
+              <FormLabel>НД</FormLabel>
               <FormMessage />
             </FormItem>
           )}
@@ -178,7 +187,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
             <FormItem>
               <FormLabel>Комментарии</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>

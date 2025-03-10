@@ -11,7 +11,6 @@ export const users = pgTable("users", {
 
 export const contracts = pgTable("contracts", {
   id: serial("id").primaryKey(),
-  contractNumber: text("contract_number").notNull(),
   companyName: text("company_name").notNull(),
   inn: text("inn").notNull(),
   director: text("director").notNull(),
@@ -24,6 +23,7 @@ export const contracts = pgTable("contracts", {
   lawyerId: integer("lawyer_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   history: json("history").notNull().default([]),
+  hasND: boolean("has_nd").notNull().default(false),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -33,7 +33,6 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 
 export const insertContractSchema = createInsertSchema(contracts).pick({
-  contractNumber: true, 
   companyName: true,
   inn: true,
   director: true,
@@ -41,6 +40,7 @@ export const insertContractSchema = createInsertSchema(contracts).pick({
   endDate: true,
   comments: true,
   lawyerId: true,
+  hasND: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
