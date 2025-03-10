@@ -22,7 +22,10 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
 
   const form = useForm<InsertContract>({
     resolver: zodResolver(insertContractSchema),
-    defaultValues: contract || {
+    defaultValues: contract ? {
+      ...contract,
+      endDate: contract.endDate instanceof Date ? format(new Date(contract.endDate), "yyyy-MM-dd") : contract.endDate,
+    } : {
       companyName: "",
       inn: "",
       director: "",
@@ -153,7 +156,6 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
                 <Input
                   type="date"
                   {...field}
-                  value={field.value instanceof Date ? format(field.value, "yyyy-MM-dd") : field.value}
                 />
               </FormControl>
               <FormMessage />

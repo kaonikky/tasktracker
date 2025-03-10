@@ -32,16 +32,21 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
 });
 
-export const insertContractSchema = createInsertSchema(contracts).pick({
-  companyName: true,
-  inn: true,
-  director: true,
-  address: true,
-  endDate: true,
-  comments: true,
-  lawyerId: true,
-  hasND: true,
-});
+// Модифицируем схему для вставки контракта, преобразуя строку даты в Date
+export const insertContractSchema = createInsertSchema(contracts)
+  .pick({
+    companyName: true,
+    inn: true,
+    director: true,
+    address: true,
+    endDate: true,
+    comments: true,
+    lawyerId: true,
+    hasND: true,
+  })
+  .extend({
+    endDate: z.string().transform((str) => new Date(str)),
+  });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
