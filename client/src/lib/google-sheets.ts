@@ -1,15 +1,15 @@
 import { Contract } from "@shared/schema";
 
 export async function syncWithGoogleSheets(contracts: Contract[]) {
-  const apiKey = process.env.VITE_GOOGLE_SHEETS_API_KEY;
-  const spreadsheetId = process.env.VITE_GOOGLE_SHEETS_ID;
-  
+  const apiKey = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY;
+  const spreadsheetId = import.meta.env.VITE_GOOGLE_SHEETS_ID;
+
   if (!apiKey || !spreadsheetId) {
     throw new Error("Google Sheets API not configured");
   }
-  
+
   const endpoint = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:Z1000`;
-  
+
   try {
     const response = await fetch(`${endpoint}?key=${apiKey}`, {
       method: "PUT",
@@ -29,11 +29,11 @@ export async function syncWithGoogleSheets(contracts: Contract[]) {
         ])
       })
     });
-    
+
     if (!response.ok) {
       throw new Error("Failed to sync with Google Sheets");
     }
-    
+
     return await response.json();
   } catch (error) {
     throw new Error(`Google Sheets sync failed: ${error.message}`);
@@ -49,20 +49,33 @@ export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
   console.log('Spreadsheet ID present:', !!spreadsheetId);
 
   if (!apiKey || !spreadsheetId) {
-    throw new Error("Google Sheets API not configured");
+    throw new Error("Google Sheets API not configured. Please check your environment variables.");
   }
 
   const endpoint = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:Z1000`;
   console.log('Fetching from endpoint:', endpoint);
 
   try {
-    const response = await fetch(`${endpoint}?key=${apiKey}`);
+    const response = await fetch(`${endpoint}?key=${apiKey}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Origin': window.location.origin
+      }
+    });
     console.log('Response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Google Sheets API error response:', errorText);
-      throw new Error(`Failed to fetch data from Google Sheets: ${errorText}`);
+
+      if (response.status === 403) {
+        throw new Error("API ключ не имеет доступа к Google Sheets API. Проверьте настройки в Google Cloud Console.");
+      } else if (response.status === 404) {
+        throw new Error("Таблица не найдена. Проверьте ID таблицы и права доступа.");
+      }
+
+      throw new Error(`Ошибка при получении данных из Google Sheets: ${errorText}`);
     }
 
     const data = await response.json();
@@ -76,7 +89,7 @@ export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
 
     if (rows.length <= 1) {
       console.log('No data rows found in sheet');
-      return [];
+      throw new Error("Таблица пуста или содержит только заголовки");
     }
 
     // Пропускаем заголовок
@@ -115,7 +128,7 @@ export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
         return contract;
       } catch (error) {
         console.error(`Error processing row ${index + 1}:`, error);
-        throw new Error(`Failed to process row ${index + 1}: ${error.message}`);
+        throw new Error(`Ошибка при обработке строки ${index + 1}: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       }
     });
 
@@ -124,8 +137,8 @@ export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
   } catch (error) {
     console.error("Google Sheets import error:", error);
     if (error instanceof Error) {
-      throw new Error(`Failed to import data from Google Sheets: ${error.message}`);
+      throw error;
     }
-    throw new Error("Failed to import data from Google Sheets");
+    throw new Error("Не удалось импортировать данные из Google Sheets");
   }
 }
