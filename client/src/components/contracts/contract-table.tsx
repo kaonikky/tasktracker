@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useContracts, useUpdateContract } from "@/lib/contracts";
+import { useContracts, useUpdateContract, useDeleteContract } from "@/lib/contracts";
 import { Contract } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import {
