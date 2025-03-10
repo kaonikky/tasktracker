@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+
 interface CompanyInfo {
   name: string;
   inn: string;
@@ -26,7 +28,7 @@ export async function searchCompanyByInn(inn: string): Promise<CompanyInfo> {
   }
 
   const data = await response.json();
-  
+
   if (!data.suggestions?.[0]) {
     throw new Error("Company not found");
   }
