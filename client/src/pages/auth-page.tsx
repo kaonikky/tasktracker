@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect } from "react";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -22,14 +23,14 @@ const registerSchema = loginSchema.extend({
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const { toast } = useToast();
 
-  // Redirect if already logged in
-  if (user) {
-    setLocation("/");
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoading && user) {
+      setLocation("/");
+    }
+  }, [user, isLoading, setLocation]);
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
