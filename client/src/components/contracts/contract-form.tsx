@@ -31,7 +31,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
       inn: "",
       director: "",
       address: "",
-      endDate: format(new Date(), "yyyy-MM-dd"),
+      endDate: "",
       comments: "",
       lawyerId: 0,
       hasND: false
