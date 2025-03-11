@@ -14,30 +14,76 @@ async function getGoogleSheetsClient() {
   }
 
   try {
-    // Заменяем возможные экранированные кавычки и переносы строк
-    const cleanedStr = serviceAccountStr
-      .replace(/\\"/g, '"')
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '\\r');
+    let serviceAccountData: string = serviceAccountStr;
+
+    // Проверяем длину ключа и его формат
+    console.log('Service account key length:', serviceAccountData.length);
+    console.log('Key starts with:', serviceAccountData.substring(0, 10));
+    console.log('Key ends with:', serviceAccountData.substring(serviceAccountData.length - 10));
+
+    // Если строка обёрнута в дополнительные кавычки, убираем их
+    if (serviceAccountData.startsWith('"') && serviceAccountData.endsWith('"')) {
+      console.log('Removing outer quotes');
+      serviceAccountData = serviceAccountData.slice(1, -1);
+    }
+
+    // Заменяем экранированные кавычки и переносы строк
+    serviceAccountData = serviceAccountData
+      .replace(/\\\\n/g, '\\n')  // Исправляем двойное экранирование \n
+      .replace(/\\"/g, '"')      // Заменяем \" на "
+      .replace(/\r\n/g, '\n')    // Нормализуем переносы строк
+      .replace(/\r/g, '\n');     // Нормализуем переносы строк
 
     console.log('Attempting to parse service account key...');
-    const serviceAccount = JSON.parse(cleanedStr);
+    const serviceAccount = JSON.parse(serviceAccountData);
+
+    // Проверяем обязательные поля
+    const requiredFields = ['type', 'project_id', 'private_key_id', 'private_key', 'client_email'];
+    const missingFields = requiredFields.filter(field => !serviceAccount[field]);
+
+    if (missingFields.length > 0) {
+      throw new Error(`В ключе сервисного аккаунта отсутствуют обязательные поля: ${missingFields.join(', ')}`);
+    }
+
+    if (serviceAccount.type !== 'service_account') {
+      throw new Error('Неверный тип аккаунта. Требуется service_account');
+    }
 
     console.log('Service account email:', serviceAccount.client_email);
+    console.log('Private key format OK:', Boolean(serviceAccount.private_key.includes('BEGIN PRIVATE KEY')));
+
+    // Правильно обрабатываем private_key
+    const privateKey = serviceAccount.private_key
+      .replace(/\\n/g, '\n')
+      .replace(/\\"/, '"');
+
     const auth = new JWT({
       email: serviceAccount.client_email,
-      key: serviceAccount.private_key,
+      key: privateKey,
       scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
     });
 
-    return google.sheets({ version: 'v4', auth });
+    // Проверяем авторизацию
+    try {
+      await auth.authorize();
+      console.log('Successfully authorized with service account');
+    } catch (authError) {
+      console.error('Authorization error:', authError);
+      throw new Error("Ошибка авторизации с сервисным аккаунтом. Проверьте корректность ключа и настройки проекта.");
+    }
+
+    const sheets = google.sheets({ version: 'v4', auth });
+    return sheets;
+
   } catch (error) {
-    console.error('Error details:', error);
+    console.error('Google Sheets client error:', error);
+
     if (error instanceof SyntaxError) {
       console.error('JSON parsing error. Key format is invalid.');
-      throw new Error("Неверный формат ключа сервисного аккаунта. Убедитесь, что это корректный JSON.");
+      throw new Error("Неверный формат JSON в ключе сервисного аккаунта. Пожалуйста, проверьте формат ключа.");
     }
-    throw new Error("Ошибка при создании клиента Google Sheets: " + (error instanceof Error ? error.message : 'неизвестная ошибка'));
+
+    throw error instanceof Error ? error : new Error("Неизвестная ошибка при создании клиента Google Sheets");
   }
 }
 
@@ -49,7 +95,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.isAuthenticated() || req.user.role !== "admin") {
+  if (!req.isAuthenticated() || req.user!.role !== "admin") {
     return res.status(403).json({ message: "Forbidden" });
   }
   next();
@@ -77,7 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contracts", requireAuth, async (req, res) => {
     try {
       const data = insertContractSchema.parse(req.body);
-      const contract = await storage.createContract(data, req.user.id);
+      const contract = await storage.createContract(data, req.user!.id);
       res.status(201).json(contract);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -99,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updated = await storage.updateContract(
         Number(req.params.id),
         data,
-        req.user.id
+        req.user!.id
       );
       res.json(updated);
     } catch (error) {
@@ -131,6 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID таблицы не настроен" });
       }
 
+      console.log('Attempting to fetch spreadsheet data...');
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
         range: 'A1:Z1000',
@@ -140,6 +187,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!rows || rows.length <= 1) {
         return res.status(400).json({ message: "Таблица пуста или содержит только заголовки" });
       }
+
+      console.log('Received rows:', rows.length);
 
       // Проверяем заголовки
       const expectedHeaders = ['Название компании', 'ИНН', 'Директор', 'Адрес', 'Дата окончания', 'Комментарии', 'НД'];
@@ -161,15 +210,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           endDate: new Date(row[4]),
           comments: row[5] || "",
           hasND: row[6]?.toLowerCase() === "true",
-          lawyerId: req.user.id
+          lawyerId: req.user!.id
         }));
 
       if (contracts.length === 0) {
         return res.status(400).json({ message: "Не найдено данных для импорта" });
       }
 
+      console.log('Importing contracts:', contracts.length);
       const importedContracts = await Promise.all(
-        contracts.map(contract => storage.createContract(contract, req.user.id))
+        contracts.map(contract => storage.createContract(contract, req.user!.id))
       );
 
       res.json(importedContracts);
