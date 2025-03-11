@@ -229,9 +229,11 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                         contract.daysLeft <= 30 ? "bg-yellow-100 text-yellow-800" :
                         "bg-green-100 text-green-800"}`}
                     >
-                      {contract.daysLeft < 0
-                        ? `${Math.abs(contract.daysLeft)} дней назад`
-                        : `через ${contract.daysLeft} дней`}
+                      {typeof contract.daysLeft === 'number' && (
+                        contract.daysLeft < 0
+                          ? `${Math.abs(contract.daysLeft)} дней назад`
+                          : `через ${contract.daysLeft} дней`
+                      )}
                     </div>
                   </TableCell>
                   <TableCell
