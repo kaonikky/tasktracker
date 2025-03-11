@@ -6,6 +6,7 @@ import { insertContractSchema } from "@shared/schema";
 import { z } from "zod";
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
+import { parse, isValid } from 'date-fns';
 
 async function getGoogleSheetsClient() {
   const serviceAccountStr = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
@@ -99,6 +100,20 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
     return res.status(403).json({ message: "Forbidden" });
   }
   next();
+}
+
+function parseDate(dateStr: string): Date {
+  // Пробуем разные форматы даты
+  const formats = ['dd.MM.yyyy', 'yyyy-MM-dd', 'MM/dd/yyyy'];
+
+  for (const format of formats) {
+    const parsed = parse(dateStr.trim(), format, new Date());
+    if (isValid(parsed)) {
+      return parsed;
+    }
+  }
+
+  throw new Error(`Неверный формат даты: ${dateStr}. Поддерживаемые форматы: ДД.ММ.ГГГГ, ГГГГ-ММ-ДД, ММ/ДД/ГГГГ`);
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -202,46 +217,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Фильтруем и преобразуем данные
       const processedRows = new Set(); // Для отслеживания уникальных ИНН
-      const contracts = rows.slice(1)
-        .filter(row => {
-          // Проверяем, что строка не пустая и содержит необходимые данные
-          if (!row[0] || !row[1] || !row[2] || !row[3] || !row[4]) {
-            console.log('Skipping incomplete row:', row);
-            return false;
+      const validContracts = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+
+        try {
+          // Проверяем наличие всех необходимых данных
+          if (!row[0]?.trim() || !row[1]?.trim() || !row[2]?.trim() || 
+              !row[3]?.trim() || !row[4]?.trim()) {
+            console.log(`Пропуск неполной строки ${i + 1}:`, row);
+            continue;
           }
 
           // Проверяем уникальность ИНН
           const inn = row[1].trim();
           if (processedRows.has(inn)) {
-            console.log('Skipping duplicate INN:', inn);
-            return false;
+            console.log(`Пропуск дубликата ИНН в строке ${i + 1}:`, inn);
+            continue;
           }
 
-          processedRows.add(inn);
-          return true;
-        })
-        .map(row => ({
-          companyName: row[0].trim(),
-          inn: row[1].trim(),
-          director: row[2].trim(),
-          address: row[3].trim(),
-          endDate: new Date(row[4]),
-          comments: row[5]?.trim() || "",
-          hasND: row[6]?.toLowerCase() === "true",
-          lawyerId: req.user!.id
-        }));
+          // Парсим дату
+          let endDate;
+          try {
+            endDate = parseDate(row[4]);
+          } catch (error) {
+            console.log(`Ошибка парсинга даты в строке ${i + 1}:`, error);
+            continue;
+          }
 
-      if (contracts.length === 0) {
-        return res.status(400).json({ message: "Не найдено данных для импорта" });
+          // Если все проверки пройдены, добавляем контракт
+          processedRows.add(inn);
+          validContracts.push({
+            companyName: row[0].trim(),
+            inn: inn,
+            director: row[2].trim(),
+            address: row[3].trim(),
+            endDate: endDate,
+            comments: row[5]?.trim() || "",
+            hasND: row[6]?.toLowerCase() === "true",
+            lawyerId: req.user!.id
+          });
+
+        } catch (error) {
+          console.error(`Ошибка обработки строки ${i + 1}:`, error);
+          continue;
+        }
       }
 
-      console.log('Filtered contracts for import:', contracts.length);
+      console.log('Валидных контрактов для импорта:', validContracts.length);
 
-      const importedContracts = await Promise.all(
-        contracts.map(contract => storage.createContract(contract, req.user!.id))
-      );
+      if (validContracts.length === 0) {
+        return res.status(400).json({ message: "Не найдено валидных данных для импорта" });
+      }
 
-      console.log('Successfully imported contracts:', importedContracts.length);
+      // Импортируем контракты последовательно
+      const importedContracts = [];
+      for (const contract of validContracts) {
+        try {
+          const imported = await storage.createContract(contract, req.user!.id);
+          importedContracts.push(imported);
+        } catch (error) {
+          console.error('Ошибка импорта контракта:', error);
+          // Продолжаем импорт остальных контрактов
+        }
+      }
+
+      console.log('Успешно импортировано контрактов:', importedContracts.length);
       res.json(importedContracts);
     } catch (error) {
       console.error('Google Sheets import error:', error);
