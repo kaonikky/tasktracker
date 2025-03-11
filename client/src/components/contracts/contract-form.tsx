@@ -34,7 +34,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
       inn: "",
       director: "",
       address: "",
-      endDate: format(new Date(), "yyyy-MM-dd"),
+      endDate: "",
       comments: "",
       lawyerId: 0,
       hasND: false
@@ -85,10 +85,6 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
       form.setValue("companyName", dadataResult.name);
       form.setValue("director", dadataResult.director);
       form.setValue("address", dadataResult.address);
-      toast({
-        title: "Успех",
-        description: "Данные о компании заполнены",
-      });
     }
   };
 
