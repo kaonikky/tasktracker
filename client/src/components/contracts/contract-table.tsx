@@ -101,8 +101,8 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                         "bg-green-100 text-green-800"}`}
                     >
                       {daysLeft < 0
-                        ? `${Math.abs(daysLeft)} дней назад`
-                        : `через ${daysLeft} дней`}
+                        ? `Истек ${Math.abs(daysLeft)} дней назад`
+                        : `Истекает через ${daysLeft} дней`}
                     </div>
                   </TableCell>
                   <TableCell>
