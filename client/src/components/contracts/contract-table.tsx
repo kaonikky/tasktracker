@@ -47,13 +47,6 @@ export function ContractTable({ onEdit }: ContractTableProps) {
     return <div>Loading contracts...</div>;
   }
 
-  console.log('Contracts data:', contracts?.map(c => ({
-    id: c.id,
-    endDate: c.endDate,
-    formattedEndDate: format(new Date(c.endDate), 'dd.MM.yyyy'),
-    daysLeft: c.daysLeft
-  })));
-
   const filteredContracts = contracts?.filter(contract =>
     contract.companyName.toLowerCase().includes(search.toLowerCase()) ||
     contract.inn.includes(search) ||
@@ -146,12 +139,6 @@ export function ContractTable({ onEdit }: ContractTableProps) {
           </TableHeader>
           <TableBody>
             {filteredContracts?.map((contract) => {
-              console.log('Contract status:', contract.id, {
-                status: contract.status,
-                daysLeft: contract.daysLeft,
-                endDate: contract.endDate
-              });
-
               return (
                 <TableRow key={contract.id}>
                   <TableCell
@@ -242,11 +229,6 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                         contract.daysLeft <= 30 ? "bg-yellow-100 text-yellow-800" :
                         "bg-green-100 text-green-800"}`}
                     >
-                      {console.log('Rendering status for contract:', contract.id, {
-                        endDate: contract.endDate,
-                        daysLeft: contract.daysLeft,
-                        formattedEndDate: format(new Date(contract.endDate), 'dd.MM.yyyy')
-                      })}
                       {contract.daysLeft < 0
                         ? `${Math.abs(contract.daysLeft)} дней назад`
                         : `через ${contract.daysLeft} дней`}

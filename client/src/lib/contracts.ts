@@ -5,6 +5,12 @@ import { apiRequest, queryClient } from "./queryClient";
 export function useContracts() {
   return useQuery<Contract[]>({
     queryKey: ["/api/contracts"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/contracts");
+      const data = await response.json();
+      console.log("Contracts from API:", data);
+      return data;
+    }
   });
 }
 
