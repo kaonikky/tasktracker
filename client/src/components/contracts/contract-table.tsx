@@ -233,12 +233,13 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                   <TableCell>
                     <div
                       className={`px-2 py-1 rounded-full text-xs font-medium inline-block
-                        ${contract.status === "expired" ? "bg-red-100 text-red-800" :
-                        contract.status === "expiring_soon" ? "bg-yellow-100 text-yellow-800" :
+                        ${contract.daysLeft < 0 ? "bg-red-100 text-red-800" :
+                        contract.daysLeft <= 30 ? "bg-yellow-100 text-yellow-800" :
                         "bg-green-100 text-green-800"}`}
                     >
-                      {contract.status === "expired" ? `Истёк ${Math.abs(contract.daysLeft)} дней назад` :
-                       contract.daysLeft != null ? `Истекает через ${contract.daysLeft} дней` : "Не указано"}
+                      {contract.daysLeft < 0
+                        ? `${Math.abs(contract.daysLeft)} дней назад`
+                        : `через ${contract.daysLeft} дней`}
                     </div>
                   </TableCell>
                   <TableCell
