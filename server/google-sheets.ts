@@ -14,7 +14,7 @@ export class GoogleSheetsStorage {
       credentials.private_key,
       ['https://www.googleapis.com/auth/spreadsheets']
     );
-    
+
     this.sheets = google.sheets({ version: 'v4', auth: this.auth });
     this.spreadsheetId = process.env.VITE_GOOGLE_SHEETS_ID!;
   }
@@ -112,20 +112,25 @@ export class GoogleSheetsStorage {
     });
 
     const values = response.data.values || [];
-    return values.map((row: any[], index: number) => ({
-      id: index + 1,
-      companyName: row[0],
-      inn: row[1],
-      director: row[2],
-      address: row[3],
-      endDate: new Date(row[4]),
-      comments: row[5] || null,
-      hasND: row[6] === 'true',
-      lawyerId: parseInt(row[7]),
-      status: row[8] as "active" | "expiring_soon" | "expired",
-      history: JSON.parse(row[9] || '[]'),
-      createdAt: new Date()
-    }));
+    return values.map((row: any[], index: number) => {
+      const endDate = new Date(row[4]);
+      const daysLeft = Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      return {
+        id: index + 1,
+        companyName: row[0],
+        inn: row[1],
+        director: row[2],
+        address: row[3],
+        endDate: endDate,
+        comments: row[5] || null,
+        hasND: row[6] === 'true',
+        lawyerId: parseInt(row[7]),
+        status: row[8] as "active" | "expiring_soon" | "expired",
+        history: JSON.parse(row[9] || '[]'),
+        createdAt: new Date(),
+        daysLeft: daysLeft
+      };
+    });
   }
 
   async createContract(contract: Omit<Contract, 'id'>): Promise<Contract> {
