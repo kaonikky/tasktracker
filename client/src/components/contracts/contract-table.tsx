@@ -289,7 +289,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                   </TableCell>
                   <TableCell>
                     <div
-                      className={`px-2 py-1 rounded-full text-xs font-medium inline-block
+                      className={`w-full py-2 px-3 text-center text-sm font-medium
                         ${daysLeft < 0 ? "bg-red-100 text-red-800" :
                         daysLeft <= 30 ? "bg-yellow-100 text-yellow-800" :
                         "bg-green-100 text-green-800"}`}
