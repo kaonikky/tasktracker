@@ -83,6 +83,8 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
       onClose();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Произошла ошибка";
+      console.error('Contract operation error:', error);
+
       toast({
         title: "Ошибка",
         description: errorMessage,

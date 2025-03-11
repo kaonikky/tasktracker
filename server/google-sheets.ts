@@ -180,36 +180,41 @@ export class GoogleSheetsStorage {
       throw new Error("Контракт с таким ИНН уже существует");
     }
 
-    // Форматируем дату в строку DD.MM.YYYY
-    const endDate = new Date(contract.endDate);
-    const endDateStr = `${endDate.getDate().toString().padStart(2, '0')}.${(endDate.getMonth() + 1).toString().padStart(2, '0')}.${endDate.getFullYear()}`;
+    try {
+      // Форматируем дату в строку DD.MM.YYYY
+      const endDate = new Date(contract.endDate);
+      const endDateStr = format(endDate, "dd.MM.yyyy");
 
-    console.log('Creating contract with date:', {
-      originalDate: contract.endDate,
-      formattedDate: endDateStr
-    });
+      console.log('Creating contract with date:', {
+        originalDate: contract.endDate,
+        formattedDate: endDateStr
+      });
 
-    await this.sheets.spreadsheets.values.append({
-      spreadsheetId: this.spreadsheetId,
-      range: 'contracts!A2:J2',
-      valueInputOption: 'RAW',
-      requestBody: {
-        values: [[
-          contract.companyName,
-          contract.inn,
-          contract.director,
-          contract.address,
-          endDateStr,
-          contract.comments || '',
-          contract.hasND.toString(),
-          contract.lawyerId.toString(),
-          contract.status,
-          JSON.stringify(contract.history)
-        ]]
-      }
-    });
+      await this.sheets.spreadsheets.values.append({
+        spreadsheetId: this.spreadsheetId,
+        range: 'contracts!A2:J2',
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [[
+            contract.companyName,
+            contract.inn,
+            contract.director,
+            contract.address,
+            endDateStr,
+            contract.comments || '',
+            contract.hasND.toString(),
+            contract.lawyerId.toString(),
+            contract.status,
+            JSON.stringify(contract.history)
+          ]]
+        }
+      });
 
-    return { ...contract, id: newId };
+      return { ...contract, id: newId };
+    } catch (error) {
+      console.error('Error creating contract:', error);
+      throw new Error("Ошибка при создании контракта");
+    }
   }
 
   async updateContract(id: number, updates: Partial<Contract>): Promise<Contract> {
