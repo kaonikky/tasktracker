@@ -174,6 +174,12 @@ export class GoogleSheetsStorage {
     const contracts = await this.getAllContracts();
     const newId = contracts.length + 1;
 
+    // Check for existing INN before creating
+    const existingContract = contracts.find(c => c.inn === contract.inn);
+    if (existingContract) {
+      throw new Error("Контракт с таким ИНН уже существует");
+    }
+
     // Форматируем дату в строку DD.MM.YYYY
     const endDate = new Date(contract.endDate);
     const endDateStr = `${endDate.getDate().toString().padStart(2, '0')}.${(endDate.getMonth() + 1).toString().padStart(2, '0')}.${endDate.getFullYear()}`;
