@@ -46,7 +46,10 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const deleteContract = useDeleteContract();
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ 
+    key: 'endDate', 
+    direction: 'asc' 
+  });
 
   if (isLoading) {
     return <div>Loading contracts...</div>;
@@ -65,6 +68,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
     contract.director.toLowerCase().includes(search.toLowerCase())
   ) || [];
 
+  // Sorting logic
   if (sortConfig.key) {
     filteredContracts.sort((a, b) => {
       if (sortConfig.key === null) return 0;
@@ -78,6 +82,10 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
         const lawyerB = users?.find(u => u.id === b.lawyerId)?.username || '';
         aValue = lawyerA.toLowerCase();
         bValue = lawyerB.toLowerCase();
+      } else if (sortConfig.key === 'endDate') {
+        // Convert dates to timestamps for comparison
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
       } else if (aValue instanceof Date) {
         aValue = aValue.getTime();
         bValue = (bValue as Date).getTime();
