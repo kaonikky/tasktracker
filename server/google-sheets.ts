@@ -136,12 +136,13 @@ export class GoogleSheetsStorage {
         timestamp: endDate.getTime()
       });
 
-      // Изменяем порядок аргументов - сначала конечная дата, потом текущая
-      const daysLeft = differenceInDays(endDate, today);
+      // Изменяем порядок аргументов - сначала текущая дата, потом конечная
+      // Это даст положительное значение для будущих дат
+      const daysLeft = -differenceInDays(new Date(), endDate);
 
       console.log('Days calculation:', {
         endDate: format(endDate, 'dd.MM.yyyy HH:mm:ss'),
-        today: format(today, 'dd.MM.yyyy HH:mm:ss'),
+        today: format(new Date(), 'dd.MM.yyyy HH:mm:ss'),
         daysLeft: daysLeft
       });
 
