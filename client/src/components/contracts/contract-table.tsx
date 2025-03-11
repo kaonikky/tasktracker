@@ -28,12 +28,19 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 };
 
+type EditingCell = {
+  id: number;
+  field: keyof Contract;
+  value: string;
+};
+
 export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void }) {
   const { user } = useAuth();
   const { data: contracts, isLoading } = useContracts();
   const updateContract = useUpdateContract();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const deleteContract = useDeleteContract();
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
@@ -77,6 +84,44 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
     });
   }
 
+  const handleDoubleClick = (contract: Contract, field: keyof Contract) => {
+    if (field === 'status' || field === 'createdAt' || field === 'history' || field === 'daysLeft' || field === 'hasND') return;
+    setEditingCell({
+      id: contract.id,
+      field,
+      value: String(contract[field] || ''),
+    });
+  };
+
+  const handleCellChange = async (contract: Contract) => {
+    if (!editingCell) return;
+
+    try {
+      const updates = {
+        [editingCell.field]: editingCell.field === 'endDate'
+          ? new Date(editingCell.value)
+          : editingCell.value
+      };
+
+      await updateContract.mutateAsync({
+        id: contract.id,
+        contract: updates,
+      });
+
+      toast({
+        title: "Успех",
+        description: "Данные обновлены",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: error instanceof Error ? error.message : "Произошла ошибка при обновлении",
+        variant: "destructive",
+      });
+    }
+
+    setEditingCell(null);
+  };
 
   return (
     <div>
@@ -127,20 +172,86 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
 
               return (
                 <TableRow key={contract.id}>
-                  <TableCell className="cursor-pointer">
-                    {contract.companyName}
+                  <TableCell
+                    className="cursor-pointer"
+                    onDoubleClick={() => handleDoubleClick(contract, 'companyName')}
+                  >
+                    {editingCell?.id === contract.id && editingCell.field === 'companyName' ? (
+                      <Input
+                        value={editingCell.value}
+                        onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                        onBlur={() => handleCellChange(contract)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
+                        autoFocus
+                      />
+                    ) : (
+                      contract.companyName
+                    )}
                   </TableCell>
-                  <TableCell className="cursor-pointer">
-                    {contract.inn}
+                  <TableCell
+                    className="cursor-pointer"
+                    onDoubleClick={() => handleDoubleClick(contract, 'inn')}
+                  >
+                    {editingCell?.id === contract.id && editingCell.field === 'inn' ? (
+                      <Input
+                        value={editingCell.value}
+                        onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                        onBlur={() => handleCellChange(contract)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
+                        autoFocus
+                      />
+                    ) : (
+                      contract.inn
+                    )}
                   </TableCell>
-                  <TableCell className="cursor-pointer">
-                    {contract.director}
+                  <TableCell
+                    className="cursor-pointer"
+                    onDoubleClick={() => handleDoubleClick(contract, 'director')}
+                  >
+                    {editingCell?.id === contract.id && editingCell.field === 'director' ? (
+                      <Input
+                        value={editingCell.value}
+                        onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                        onBlur={() => handleCellChange(contract)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
+                        autoFocus
+                      />
+                    ) : (
+                      contract.director
+                    )}
                   </TableCell>
-                  <TableCell className="cursor-pointer">
-                    {contract.address}
+                  <TableCell
+                    className="cursor-pointer"
+                    onDoubleClick={() => handleDoubleClick(contract, 'address')}
+                  >
+                    {editingCell?.id === contract.id && editingCell.field === 'address' ? (
+                      <Input
+                        value={editingCell.value}
+                        onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                        onBlur={() => handleCellChange(contract)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
+                        autoFocus
+                      />
+                    ) : (
+                      contract.address
+                    )}
                   </TableCell>
-                  <TableCell className="cursor-pointer">
-                    {format(endDate, "dd.MM.yyyy")}
+                  <TableCell
+                    className="cursor-pointer"
+                    onDoubleClick={() => handleDoubleClick(contract, 'endDate')}
+                  >
+                    {editingCell?.id === contract.id && editingCell.field === 'endDate' ? (
+                      <Input
+                        type="date"
+                        value={editingCell.value}
+                        onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                        onBlur={() => handleCellChange(contract)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
+                        autoFocus
+                      />
+                    ) : (
+                      format(endDate, "dd.MM.yyyy")
+                    )}
                   </TableCell>
                   <TableCell>
                     <div
@@ -165,8 +276,21 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                   >
                     <div className={`w-6 h-6 rounded ${contract.hasND ? 'bg-red-500' : 'border-2 border-gray-300'}`} />
                   </TableCell>
-                  <TableCell className="cursor-pointer">
-                    {contract.comments}
+                  <TableCell
+                    className="cursor-pointer"
+                    onDoubleClick={() => handleDoubleClick(contract, 'comments')}
+                  >
+                    {editingCell?.id === contract.id && editingCell.field === 'comments' ? (
+                      <Input
+                        value={editingCell.value}
+                        onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                        onBlur={() => handleCellChange(contract)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
+                        autoFocus
+                      />
+                    ) : (
+                      contract.comments
+                    )}
                   </TableCell>
                   <TableCell>{contract.history[0]?.username || 'Не указан'}</TableCell>
                   <TableCell>
