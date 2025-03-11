@@ -119,7 +119,6 @@ export class GoogleSheetsStorage {
       const dateStr = row[4] || '';
       console.log(`\nProcessing contract ${index + 1}:`, { dateString: dateStr });
 
-      // Используем parse из date-fns для парсинга даты
       const endDate = parse(dateStr, 'dd.MM.yyyy', new Date());
 
       if (!isValid(endDate)) {
@@ -127,7 +126,6 @@ export class GoogleSheetsStorage {
         return null;
       }
 
-      // Устанавливаем время на конец дня
       endDate.setHours(23, 59, 59, 999);
 
       console.log('Parsed date:', {
@@ -138,15 +136,15 @@ export class GoogleSheetsStorage {
 
       // Изменяем порядок аргументов - сначала текущая дата, потом конечная
       // Это даст положительное значение для будущих дат
-      const daysLeft = -differenceInDays(new Date(), endDate);
+      const daysLeft = -differenceInDays(today, endDate);
 
       console.log('Days calculation:', {
         endDate: format(endDate, 'dd.MM.yyyy HH:mm:ss'),
-        today: format(new Date(), 'dd.MM.yyyy HH:mm:ss'),
+        today: format(today, 'dd.MM.yyyy HH:mm:ss'),
         daysLeft: daysLeft
       });
 
-      return {
+      const contract: Contract = {
         id: index + 1,
         companyName: row[0],
         inn: row[1],
@@ -155,12 +153,20 @@ export class GoogleSheetsStorage {
         endDate: endDate,
         comments: row[5] || null,
         hasND: row[6] === 'true',
-        lawyerId: parseInt(row[7]),
+        lawyerId: parseInt(row[7]) || 0,
         status: row[8] as "active" | "expiring_soon" | "expired",
         history: JSON.parse(row[9] || '[]'),
         createdAt: new Date(),
         daysLeft: daysLeft
       };
+
+      console.log('Created contract:', {
+        id: contract.id,
+        endDate: format(contract.endDate, 'dd.MM.yyyy'),
+        daysLeft: contract.daysLeft
+      });
+
+      return contract;
     }).filter(Boolean) as Contract[];
   }
 
