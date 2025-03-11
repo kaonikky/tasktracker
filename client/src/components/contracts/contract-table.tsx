@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useContracts, useUpdateContract, useDeleteContract } from "@/lib/contracts";
+import { useContracts, useUpdateContract } from "@/lib/contracts";
 import { Contract } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -13,16 +13,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, MoreVertical, Trash } from "lucide-react";
+import { Edit, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-
 
 interface ContractTableProps {
   onEdit: (contract: Contract) => void;
@@ -41,9 +39,6 @@ export function ContractTable({ onEdit }: ContractTableProps) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const deleteContract = useDeleteContract();
-
 
   if (isLoading) {
     return <div>Loading contracts...</div>;
@@ -52,8 +47,7 @@ export function ContractTable({ onEdit }: ContractTableProps) {
   const filteredContracts = contracts?.filter(contract =>
     contract.companyName.toLowerCase().includes(search.toLowerCase()) ||
     contract.inn.includes(search) ||
-    contract.director.toLowerCase().includes(search.toLowerCase()) ||
-    contract.contractNumber.toLowerCase().includes(search.toLowerCase())
+    contract.director.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleDoubleClick = (contract: Contract, field: keyof Contract) => {
@@ -95,22 +89,6 @@ export function ContractTable({ onEdit }: ContractTableProps) {
     }
 
     setEditingCell(null);
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteContract.mutateAsync(id);
-      toast({
-        title: "Success",
-        description: "Contract deleted successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete contract",
-        variant: "destructive",
-      });
-    }
   };
 
   return (
@@ -268,21 +246,8 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                     contract.comments
                   )}
                 </TableCell>
-                <TableCell
-                  className="cursor-pointer"
-                  onDoubleClick={() => handleDoubleClick(contract, 'lawyerId')}
-                >
-                  {editingCell?.id === contract.id && editingCell.field === 'lawyerId' ? (
-                    <Input
-                      value={editingCell.value}
-                      onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                      onBlur={() => handleCellChange(contract)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
-                      autoFocus
-                    />
-                  ) : (
-                    contract.history[0]?.username || 'Не указан'
-                  )}
+                <TableCell>
+                  {contract.history[0]?.username || 'Не указан'}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -296,15 +261,6 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                         <Edit className="mr-2 h-4 w-4" />
                         Редактировать
                       </DropdownMenuItem>
-                      {user?.role === "admin" && (
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={() => setDeleteConfirm(contract.id)}
-                        >
-                          <Trash className="mr-2 h-4 w-4" />
-                          Удалить
-                        </DropdownMenuItem>
-                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -313,31 +269,6 @@ export function ContractTable({ onEdit }: ContractTableProps) {
           </TableBody>
         </Table>
       </div>
-
-      <AlertDialog open={deleteConfirm !== null} onOpenChange={() => setDeleteConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Это действие нельзя отменить. Договор будет удален безвозвратно.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600"
-              onClick={() => {
-                if (deleteConfirm) {
-                  handleDelete(deleteConfirm);
-                  setDeleteConfirm(null);
-                }
-              }}
-            >
-              Удалить
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

@@ -6,18 +6,12 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ContractForm } from "@/components/contracts/contract-form";
 import { Contract } from "@shared/schema";
-import { PlusCircle, Download } from "lucide-react";
-import { importFromGoogleSheets } from "@/lib/google-sheets";
-import { useCreateContract } from "@/lib/contracts";
-import { useToast } from "@/hooks/use-toast";
+import { PlusCircle } from "lucide-react";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const createContract = useCreateContract();
-  const { toast } = useToast();
 
   const handleEditContract = (contract: Contract) => {
     setSelectedContract(contract);
@@ -27,30 +21,6 @@ export default function HomePage() {
   const handleCreateContract = () => {
     setSelectedContract(null);
     setIsFormOpen(true);
-  };
-
-  const handleImport = async () => {
-    try {
-      setIsImporting(true);
-      console.log('Starting import process');
-
-      const contracts = await importFromGoogleSheets();
-      console.log(`Successfully imported ${contracts.length} contracts`);
-
-      toast({
-        title: "Успех",
-        description: `Импортировано ${contracts.length} контрактов`,
-      });
-    } catch (error) {
-      console.error('Import process error:', error);
-      toast({
-        title: "Ошибка импорта",
-        description: error instanceof Error ? error.message : "Произошла ошибка при импорте",
-        variant: "destructive",
-      });
-    } finally {
-      setIsImporting(false);
-    }
   };
 
   return (
@@ -76,35 +46,25 @@ export default function HomePage() {
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold">Dashboard</h2>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleImport}
-              disabled={isImporting}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {isImporting ? "Импорт..." : "Импорт из Google Sheets"}
-            </Button>
-            <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <SheetTrigger asChild>
-                <Button onClick={handleCreateContract}>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Новый договор
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="w-[400px] sm:w-[540px]">
-                <SheetHeader>
-                  <SheetTitle>
-                    {selectedContract ? "Редактировать договор" : "Новый договор"}
-                  </SheetTitle>
-                </SheetHeader>
-                <ContractForm
-                  contract={selectedContract}
-                  onClose={() => setIsFormOpen(false)}
-                />
-              </SheetContent>
-            </Sheet>
-          </div>
+          <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <SheetTrigger asChild>
+              <Button onClick={handleCreateContract}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Новый договор
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-[400px] sm:w-[540px]">
+              <SheetHeader>
+                <SheetTitle>
+                  {selectedContract ? "Редактировать договор" : "Новый договор"}
+                </SheetTitle>
+              </SheetHeader>
+              <ContractForm
+                contract={selectedContract}
+                onClose={() => setIsFormOpen(false)}
+              />
+            </SheetContent>
+          </Sheet>
         </div>
 
         <Stats />

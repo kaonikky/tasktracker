@@ -1,0 +1,11 @@
+[project]
+name = "repl-nix-workspace"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.11"
+dependencies = [
+    "cachetools>=5.5.2",
+    "fastapi>=0.115.11",
+    "gspread>=6.2.0",
+    "uvicorn>=0.34.0",
+]
