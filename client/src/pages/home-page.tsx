@@ -32,12 +32,12 @@ export default function HomePage() {
             <span className="text-muted-foreground">
               {user?.username} ({user?.role})
             </span>
-            <Button
-              variant="outline"
+            <Button 
+              variant="outline" 
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
             >
-              {logoutMutation.isPending ? "Выход..." : "Выйти"}
+              {logoutMutation.isPending ? "Logging out..." : "Logout"}
             </Button>
           </div>
         </div>
@@ -50,13 +50,13 @@ export default function HomePage() {
             <SheetTrigger asChild>
               <Button onClick={handleCreateContract}>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Новый договор
+                New Contract
               </Button>
             </SheetTrigger>
             <SheetContent className="w-[400px] sm:w-[540px]">
               <SheetHeader>
                 <SheetTitle>
-                  {selectedContract ? "Редактировать договор" : "Новый договор"}
+                  {selectedContract ? "Edit Contract" : "New Contract"}
                 </SheetTitle>
               </SheetHeader>
               <ContractForm

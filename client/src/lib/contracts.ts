@@ -5,14 +5,12 @@ import { apiRequest, queryClient } from "./queryClient";
 export function useContracts() {
   return useQuery<Contract[]>({
     queryKey: ["/api/contracts"],
-    staleTime: 5 * 60 * 1000, // Кэш на 5 минут
   });
 }
 
 export function useContract(id: number) {
   return useQuery<Contract>({
     queryKey: ["/api/contracts", id],
-    staleTime: 5 * 60 * 1000, // Кэш на 5 минут
   });
 }
 
@@ -39,6 +37,17 @@ export function useUpdateContract() {
     }) => {
       const res = await apiRequest("PUT", `/api/contracts/${id}`, contract);
       return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contracts"] });
+    },
+  });
+}
+
+export function useDeleteContract() {
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/contracts/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contracts"] });
