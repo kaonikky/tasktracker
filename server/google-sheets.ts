@@ -116,11 +116,8 @@ export class GoogleSheetsStorage {
     });
 
     return values.map((row: any[], index: number) => {
-      // Парсим дату из формата DD.MM.YYYY
       const dateStr = row[4] || '';
-      console.log(`\nProcessing contract ${index + 1}:`, {
-        dateString: dateStr
-      });
+      console.log(`\nProcessing contract ${index + 1}:`, { dateString: dateStr });
 
       // Используем parse из date-fns для парсинга даты
       const endDate = parse(dateStr, 'dd.MM.yyyy', new Date());
@@ -139,6 +136,7 @@ export class GoogleSheetsStorage {
         timestamp: endDate.getTime()
       });
 
+      // Изменяем порядок аргументов - сначала конечная дата, потом текущая
       const daysLeft = differenceInDays(endDate, today);
 
       console.log('Days calculation:', {
