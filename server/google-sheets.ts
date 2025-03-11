@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import type { JWT } from 'google-auth-library';
 import { User, Contract } from "@shared/schema";
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, parse, isValid } from 'date-fns';
 
 export class GoogleSheetsStorage {
   private auth: JWT;
@@ -21,7 +21,6 @@ export class GoogleSheetsStorage {
   }
 
   private async initializeSheets() {
-    // Проверяем существование листов и создаем их при необходимости
     const sheetsInfo = await this.sheets.spreadsheets.get({
       spreadsheetId: this.spreadsheetId
     });
@@ -42,7 +41,6 @@ export class GoogleSheetsStorage {
           }
         });
 
-        // Добавляем заголовки для каждого листа
         const headers = sheetName === 'users'
           ? ['username', 'password', 'role']
           : ['companyName', 'inn', 'director', 'address', 'endDate', 'comments', 'hasND', 'lawyerId', 'status', 'history'];
@@ -63,7 +61,6 @@ export class GoogleSheetsStorage {
     await this.initializeSheets();
   }
 
-  // Методы для работы с пользователями
   async getAllUsers(): Promise<User[]> {
     const response = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.spreadsheetId,
@@ -105,7 +102,6 @@ export class GoogleSheetsStorage {
     return users[id - 1];
   }
 
-  // Методы для работы с контрактами
   async getAllContracts(): Promise<Contract[]> {
     const response = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.spreadsheetId,
@@ -115,13 +111,25 @@ export class GoogleSheetsStorage {
     const values = response.data.values || [];
     return values.map((row: any[], index: number) => {
       // Парсим дату из формата DD.MM.YYYY
-      const [day, month, year] = (row[4] || '').split('.');
-      const endDate = new Date(Number(year), Number(month) - 1, Number(day));
+      const dateStr = row[4] || '';
+      console.log('Processing date string:', dateStr);
+
+      // Используем parse из date-fns для парсинга даты
+      const endDate = parse(dateStr, 'dd.MM.yyyy', new Date());
+
+      if (!isValid(endDate)) {
+        console.error('Invalid date:', dateStr);
+        return null;
+      }
+
+      // Устанавливаем время на конец дня
+      endDate.setHours(23, 59, 59, 999);
+
       const daysLeft = differenceInDays(endDate, new Date());
 
       console.log('Processing contract:', {
-        endDateStr: row[4],
-        endDate: endDate,
+        endDateStr: dateStr,
+        parsedDate: endDate,
         daysLeft: daysLeft
       });
 
@@ -140,7 +148,7 @@ export class GoogleSheetsStorage {
         createdAt: new Date(),
         daysLeft: daysLeft
       };
-    });
+    }).filter(Boolean) as Contract[];
   }
 
   async createContract(contract: Omit<Contract, 'id'>): Promise<Contract> {
