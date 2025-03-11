@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Edit, MoreVertical, Trash } from "lucide-react";
 import {
@@ -74,14 +74,17 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
           </TableHeader>
           <TableBody>
             {filteredContracts?.map((contract) => {
-              console.log('Rendering contract:', {
-                id: contract.id,
-                endDate: contract.endDate,
-                daysLeft: contract.daysLeft
-              });
+              // Вычисляем daysLeft прямо здесь
+              const endDate = new Date(contract.endDate);
+              const today = new Date();
+              const daysLeft = -differenceInDays(today, endDate);
 
-              const daysLeft = contract.daysLeft;
-              console.log('Days left for contract:', contract.id, daysLeft);
+              console.log('Contract:', {
+                id: contract.id,
+                endDate: endDate,
+                today: today,
+                daysLeft: daysLeft
+              });
 
               return (
                 <TableRow key={contract.id}>
@@ -89,7 +92,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                   <TableCell>{contract.inn}</TableCell>
                   <TableCell>{contract.director}</TableCell>
                   <TableCell>{contract.address}</TableCell>
-                  <TableCell>{format(new Date(contract.endDate), "dd.MM.yyyy")}</TableCell>
+                  <TableCell>{format(endDate, "dd.MM.yyyy")}</TableCell>
                   <TableCell>
                     <div
                       className={`px-2 py-1 rounded-full text-xs font-medium inline-block
@@ -97,7 +100,9 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                         daysLeft <= 30 ? "bg-yellow-100 text-yellow-800" :
                         "bg-green-100 text-green-800"}`}
                     >
-                      {`${daysLeft < 0 ? Math.abs(daysLeft) + ' дней назад' : 'через ' + daysLeft + ' дней'}`}
+                      {daysLeft < 0
+                        ? `${Math.abs(daysLeft)} дней назад`
+                        : `через ${daysLeft} дней`}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -149,7 +154,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
               className="bg-red-600"
               onClick={() => {
                 if (deleteConfirm) {
-                  handleDelete(deleteConfirm);
+                  deleteContract.mutate(deleteConfirm);
                   setDeleteConfirm(null);
                 }
               }}
