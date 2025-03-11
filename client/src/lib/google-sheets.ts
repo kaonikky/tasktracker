@@ -1,43 +1,25 @@
 import { Contract } from "@shared/schema";
 
-export async function syncWithGoogleSheets(contracts: Contract[]) {
-  const apiKey = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY;
-  const spreadsheetId = import.meta.env.VITE_GOOGLE_SHEETS_ID;
-
-  if (!apiKey || !spreadsheetId) {
-    throw new Error("Google Sheets API not configured");
-  }
-
-  const endpoint = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:Z1000`;
-
-  try {
-    const response = await fetch(`${endpoint}?key=${apiKey}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        values: contracts.map(contract => [
-          contract.contractNumber,
-          contract.companyName,
-          contract.inn,
-          contract.director,
-          contract.address,
-          new Date(contract.endDate).toLocaleDateString(),
-          contract.status,
-          contract.comments || ""
-        ])
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to sync with Google Sheets");
+function parseSheetDate(dateStr: string): Date {
+  // Попытка парсинга даты в формате ДД.ММ.ГГГГ
+  const dateParts = dateStr.split('.');
+  if (dateParts.length === 3) {
+    const day = parseInt(dateParts[0]);
+    const month = parseInt(dateParts[1]) - 1; // месяцы в JS начинаются с 0
+    const year = parseInt(dateParts[2]);
+    const date = new Date(year, month, day);
+    if (!isNaN(date.getTime())) {
+      return date;
     }
-
-    return await response.json();
-  } catch (error) {
-    throw new Error(`Google Sheets sync failed: ${error.message}`);
   }
+
+  // Попытка парсинга ISO формата
+  const isoDate = new Date(dateStr);
+  if (!isNaN(isoDate.getTime())) {
+    return isoDate;
+  }
+
+  throw new Error(`Неверный формат даты: ${dateStr}. Используйте формат ДД.ММ.ГГГГ`);
 }
 
 export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
@@ -46,71 +28,81 @@ export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
 
   console.log('Starting Google Sheets import');
   console.log('API Key present:', !!apiKey);
+  console.log('API Key length:', apiKey?.length);
   console.log('Spreadsheet ID present:', !!spreadsheetId);
 
   if (!apiKey || !spreadsheetId) {
-    throw new Error("Google Sheets API not configured. Please check your environment variables.");
+    throw new Error("API ключ или ID таблицы не настроены. Проверьте переменные окружения.");
   }
 
-  const endpoint = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:Z1000`;
-  console.log('Fetching from endpoint:', endpoint);
+  const baseUrl = 'https://sheets.googleapis.com/v4/spreadsheets';
+  const endpoint = `${baseUrl}/${spreadsheetId}/values/A1:Z1000`;
+  const url = `${endpoint}?key=${encodeURIComponent(apiKey)}`;
+
+  console.log('Using endpoint:', endpoint);
 
   try {
-    const response = await fetch(`${endpoint}?key=${apiKey}`, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Origin': window.location.origin
+        'Content-Type': 'application/json'
       }
     });
+
     console.log('Response status:', response.status);
+    const responseText = await response.text();
+    console.log('Raw response:', responseText);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Google Sheets API error response:', errorText);
-
-      if (response.status === 403) {
-        throw new Error("API ключ не имеет доступа к Google Sheets API. Проверьте настройки в Google Cloud Console.");
-      } else if (response.status === 404) {
-        throw new Error("Таблица не найдена. Проверьте ID таблицы и права доступа.");
+      let errorMessage = 'Ошибка при получении данных из Google Sheets';
+      try {
+        const errorJson = JSON.parse(responseText);
+        if (errorJson.error) {
+          errorMessage = `${errorMessage}: ${errorJson.error.message}`;
+          console.error('Detailed error:', errorJson.error);
+        }
+      } catch (e) {
+        console.error('Error parsing error response:', e);
       }
-
-      throw new Error(`Ошибка при получении данных из Google Sheets: ${errorText}`);
+      throw new Error(errorMessage);
     }
 
-    const data = await response.json();
-    console.log('Received data structure:', {
+    const data = JSON.parse(responseText);
+    console.log('Parsed data structure:', {
       hasValues: !!data.values,
       rowCount: data.values?.length || 0,
       headers: data.values?.[0] || []
     });
 
-    const rows = data.values || [];
-
-    if (rows.length <= 1) {
-      console.log('No data rows found in sheet');
+    if (!data.values || data.values.length <= 1) {
       throw new Error("Таблица пуста или содержит только заголовки");
     }
 
+    // Проверяем заголовки
+    const expectedHeaders = ['Название компании', 'ИНН', 'Директор', 'Адрес', 'Дата окончания', 'Комментарии', 'НД'];
+    const headers = data.values[0];
+
+    if (!headers || headers.length < expectedHeaders.length) {
+      throw new Error(`Неверная структура таблицы. Ожидаемые столбцы: ${expectedHeaders.join(', ')}`);
+    }
+
     // Пропускаем заголовок
-    const contracts = rows.slice(1).map((row, index) => {
+    const contracts = data.values.slice(1).map((row, index) => {
       console.log(`Processing row ${index + 1}:`, row);
 
       try {
-        let endDate = new Date();
-        if (row[4]) {
-          // Пробуем разные форматы даты
-          const dateParts = row[4].split('.');
-          if (dateParts.length === 3) {
-            // Формат ДД.ММ.ГГГГ
-            endDate = new Date(
-              parseInt(dateParts[2]), 
-              parseInt(dateParts[1]) - 1, 
-              parseInt(dateParts[0])
-            );
-          } else {
-            endDate = new Date(row[4]);
-          }
+        if (!row[0] && !row[1]) {
+          console.log(`Skipping empty row ${index + 1}`);
+          return null;
+        }
+
+        let endDate: Date;
+        try {
+          endDate = parseSheetDate(row[4] || '');
+        } catch (error) {
+          console.error(`Date parsing error in row ${index + 1}:`, error);
+          throw new Error(`Ошибка в строке ${index + 1}: ${error instanceof Error ? error.message : 'Неверный формат даты'}`);
         }
 
         const contract = {
@@ -130,7 +122,11 @@ export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
         console.error(`Error processing row ${index + 1}:`, error);
         throw new Error(`Ошибка при обработке строки ${index + 1}: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       }
-    });
+    }).filter(Boolean); // Удаляем пустые строки
+
+    if (contracts.length === 0) {
+      throw new Error("Не найдено данных для импорта в таблице");
+    }
 
     console.log(`Successfully processed ${contracts.length} contracts`);
     return contracts;
@@ -140,5 +136,49 @@ export async function importFromGoogleSheets(): Promise<Partial<Contract>[]> {
       throw error;
     }
     throw new Error("Не удалось импортировать данные из Google Sheets");
+  }
+}
+
+export async function syncWithGoogleSheets(contracts: Contract[]) {
+  const apiKey = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY;
+  const spreadsheetId = import.meta.env.VITE_GOOGLE_SHEETS_ID;
+  console.log('Using Google Sheets API with key:', apiKey ? 'Present' : 'Missing');
+
+  if (!apiKey || !spreadsheetId) {
+    throw new Error("API ключ или ID таблицы не настроены");
+  }
+
+  const endpoint = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:Z1000`;
+
+  try {
+    const response = await fetch(`${endpoint}?key=${apiKey}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        values: contracts.map(contract => [
+          contract.companyName,
+          contract.inn,
+          contract.director,
+          contract.address,
+          new Date(contract.endDate).toLocaleDateString(),
+          contract.comments || "",
+          contract.hasND ? "true" : "false"
+        ])
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Google Sheets API error:', errorText);
+      throw new Error("Не удалось синхронизировать с Google Sheets");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Sync error:', error);
+    throw new Error(`Ошибка синхронизации с Google Sheets: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
   }
 }
