@@ -82,27 +82,35 @@ export class GoogleSheetsStorageAdapter implements IStorage {
   }
 
   async createContract(insertContract: InsertContract, userId: number): Promise<Contract> {
-    const existingContract = await this.getContractByInn(insertContract.inn);
-    if (existingContract) {
-      throw new Error("Контракт с таким ИНН уже существует");
+    try {
+      const existingContract = await this.getContractByInn(insertContract.inn);
+      if (existingContract) {
+        throw new Error("Контракт с таким ИНН уже существует");
+      }
+
+      const now = new Date();
+      const contract: Contract = {
+        ...insertContract,
+        id: 0, // ID будет назначен в GoogleSheetsStorage
+        status: this.calculateContractStatus(new Date(insertContract.endDate)).status,
+        createdAt: now,
+        history: [{
+          userId,
+          username: (await this.getUser(userId))?.username || "Unknown",
+          action: "created",
+          changes: {},
+          timestamp: now.toISOString()
+        }]
+      };
+
+      return this.googleSheets.createContract(contract);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("ИНН уже существует")) {
+        throw error;
+      }
+      console.error('Error in createContract:', error);
+      throw new Error("Ошибка при создании контракта");
     }
-
-    const now = new Date();
-    const contract: Contract = {
-      ...insertContract,
-      id: 0, // ID будет назначен в GoogleSheetsStorage
-      status: this.calculateContractStatus(parseISO(insertContract.endDate.toString())).status,
-      createdAt: now,
-      history: [{
-        userId,
-        username: (await this.getUser(userId))?.username || "Unknown",
-        action: "created",
-        changes: {},
-        timestamp: now.toISOString()
-      }]
-    };
-
-    return this.googleSheets.createContract(contract);
   }
 
   async updateContract(

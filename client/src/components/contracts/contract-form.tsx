@@ -10,6 +10,7 @@ import { useDadataSearch } from "@/lib/dadata";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ContractFormProps {
   contract?: Contract | null;
@@ -42,6 +43,31 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
 
   const inn = form.watch("inn");
   const { data: dadataResult, isLoading: isLoadingDadata, error: dadataError } = useDadataSearch(inn);
+
+  // Check for existing INN when INN field changes
+  useEffect(() => {
+    const checkExistingInn = async () => {
+      if (!inn || inn.length < 3) return; // Don't check if INN is too short
+
+      try {
+        const response = await apiRequest("GET", `/api/contracts/check-inn/${inn}`);
+        const exists = await response.json();
+
+        if (exists) {
+          form.setError("inn", {
+            type: "manual",
+            message: "Контракт с таким ИНН уже существует"
+          });
+        } else {
+          form.clearErrors("inn");
+        }
+      } catch (error) {
+        console.error('Error checking INN:', error);
+      }
+    };
+
+    checkExistingInn();
+  }, [inn, form]);
 
   useEffect(() => {
     if (dadataError) {
@@ -91,24 +117,11 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
       const errorMessage = error instanceof Error ? error.message : "Произошла ошибка";
       console.error('Contract operation error:', error);
 
-      // Если ошибка связана с дублированием ИНН
-      if (errorMessage.includes("ИНН уже существует")) {
-        form.setError("inn", {
-          type: "manual",
-          message: "Контракт с таким ИНН уже существует"
-        });
-        toast({
-          title: "Ошибка",
-          description: "Контракт с таким ИНН уже существует",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Ошибка",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Ошибка",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 

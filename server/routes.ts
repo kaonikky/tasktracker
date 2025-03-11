@@ -22,6 +22,13 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
+  // Check if INN exists
+  app.get("/api/contracts/check-inn/:inn", requireAuth, async (req, res) => {
+    const { inn } = req.params;
+    const contract = await storage.getContractByInn(inn);
+    res.json(contract !== undefined);
+  });
+
   // Get all contracts
   app.get("/api/contracts", requireAuth, async (_req, res) => {
     const contracts = await storage.getContracts();

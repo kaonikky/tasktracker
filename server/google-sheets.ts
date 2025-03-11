@@ -142,15 +142,16 @@ export class GoogleSheetsStorage {
   async createContract(contract: Omit<Contract, 'id'>): Promise<Contract> {
     try {
       const contracts = await this.getAllContracts();
-      const newId = (contracts.length + 1);
 
-      // Check for existing INN
+      // Check for existing INN first
       const existingContract = contracts.find(c => c.inn === contract.inn);
       if (existingContract) {
         throw new Error("Контракт с таким ИНН уже существует");
       }
 
+      const newId = (contracts.length + 1);
       const endDate = new Date(contract.endDate);
+
       if (!isValid(endDate)) {
         throw new Error("Некорректная дата окончания контракта");
       }
@@ -179,10 +180,10 @@ export class GoogleSheetsStorage {
 
       return { ...contract, id: newId };
     } catch (error) {
-      console.error('Error creating contract:', error);
       if (error instanceof Error && error.message.includes("ИНН уже существует")) {
-        throw error;
+        throw error; // Re-throw INN duplicate error
       }
+      console.error('Error in GoogleSheetsStorage.createContract:', error);
       throw new Error("Ошибка при создании контракта");
     }
   }
