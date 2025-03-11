@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import type { JWT } from 'google-auth-library';
 import { User, Contract } from "@shared/schema";
-import { differenceInDays, parse, isValid } from 'date-fns';
+import { differenceInDays, parse, isValid, format } from 'date-fns';
 
 export class GoogleSheetsStorage {
   private auth: JWT;
@@ -109,10 +109,18 @@ export class GoogleSheetsStorage {
     });
 
     const values = response.data.values || [];
+    const today = new Date();
+    console.log('Current date:', {
+      raw: today,
+      formatted: format(today, 'dd.MM.yyyy')
+    });
+
     return values.map((row: any[], index: number) => {
       // Парсим дату из формата DD.MM.YYYY
       const dateStr = row[4] || '';
-      console.log('Processing date string:', dateStr);
+      console.log(`\nProcessing contract ${index + 1}:`, {
+        dateString: dateStr
+      });
 
       // Используем parse из date-fns для парсинга даты
       const endDate = parse(dateStr, 'dd.MM.yyyy', new Date());
@@ -125,11 +133,17 @@ export class GoogleSheetsStorage {
       // Устанавливаем время на конец дня
       endDate.setHours(23, 59, 59, 999);
 
-      const daysLeft = differenceInDays(endDate, new Date());
+      console.log('Parsed date:', {
+        raw: endDate,
+        formatted: format(endDate, 'dd.MM.yyyy HH:mm:ss'),
+        timestamp: endDate.getTime()
+      });
 
-      console.log('Processing contract:', {
-        endDateStr: dateStr,
-        parsedDate: endDate,
+      const daysLeft = differenceInDays(endDate, today);
+
+      console.log('Days calculation:', {
+        endDate: format(endDate, 'dd.MM.yyyy HH:mm:ss'),
+        today: format(today, 'dd.MM.yyyy HH:mm:ss'),
         daysLeft: daysLeft
       });
 
