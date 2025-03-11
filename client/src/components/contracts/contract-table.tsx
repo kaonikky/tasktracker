@@ -52,8 +52,7 @@ export function ContractTable({ onEdit }: ContractTableProps) {
   const filteredContracts = contracts?.filter(contract =>
     contract.companyName.toLowerCase().includes(search.toLowerCase()) ||
     contract.inn.includes(search) ||
-    contract.director.toLowerCase().includes(search.toLowerCase()) ||
-    contract.contractNumber.toLowerCase().includes(search.toLowerCase())
+    contract.director.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleDoubleClick = (contract: Contract, field: keyof Contract) => {

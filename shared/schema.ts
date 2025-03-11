@@ -9,6 +9,16 @@ export const users = pgTable("users", {
   role: text("role", { enum: ["admin", "lawyer"] }).notNull().default("lawyer"),
 });
 
+// Исправляем тип для истории контракта
+export type ContractHistoryEntry = {
+  userId: number;
+  username: string;
+  action: string;
+  changes: Record<string, { old: any; new: any; }>;
+  timestamp: string;
+};
+
+// В определении таблицы contracts
 export const contracts = pgTable("contracts", {
   id: serial("id").primaryKey(),
   companyName: text("company_name").notNull(),
@@ -22,7 +32,7 @@ export const contracts = pgTable("contracts", {
   comments: text("comments"),
   lawyerId: integer("lawyer_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  history: json("history").notNull().default([]),
+  history: json("history").$type<ContractHistoryEntry[]>().notNull().default([]),
   hasND: boolean("has_nd").notNull().default(false),
 });
 
@@ -52,11 +62,3 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = z.infer<typeof insertContractSchema>;
-
-export type ContractHistoryEntry = {
-  userId: number;
-  username: string;
-  action: string;
-  changes: Record<string, { old: any; new: any; }>;
-  timestamp: string;
-};
