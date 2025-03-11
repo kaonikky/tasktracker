@@ -1,7 +1,7 @@
 import { User, InsertUser, Contract, InsertContract, ContractHistoryEntry } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
-import { addDays, parseISO, isAfter } from "date-fns";
+import { addDays, parseISO, isAfter, differenceInDays } from "date-fns";
 import { GoogleSheetsStorage } from "./google-sheets";
 
 const MemoryStore = createMemoryStore(session);
@@ -36,16 +36,17 @@ export class GoogleSheetsStorageAdapter implements IStorage {
     await this.googleSheets.initialize();
   }
 
-  private calculateContractStatus(endDate: Date): "active" | "expiring_soon" | "expired" {
+  private calculateContractStatus(endDate: Date): { status: "active" | "expiring_soon" | "expired"; daysLeft: number } {
     const today = new Date();
     const thirtyDaysFromNow = addDays(today, 30);
+    const daysLeft = differenceInDays(endDate, today);
 
     if (isAfter(today, endDate)) {
-      return "expired";
+      return { status: "expired", daysLeft };
     } else if (isAfter(thirtyDaysFromNow, endDate)) {
-      return "expiring_soon";
+      return { status: "expiring_soon", daysLeft };
     }
-    return "active";
+    return { status: "active", daysLeft };
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -62,10 +63,14 @@ export class GoogleSheetsStorageAdapter implements IStorage {
 
   async getContracts(): Promise<Contract[]> {
     const contracts = await this.googleSheets.getAllContracts();
-    return contracts.map(contract => ({
-      ...contract,
-      status: this.calculateContractStatus(parseISO(contract.endDate.toString()))
-    }));
+    return contracts.map(contract => {
+      const { status, daysLeft } = this.calculateContractStatus(parseISO(contract.endDate.toString()));
+      return {
+        ...contract,
+        status,
+        daysLeft
+      };
+    });
   }
 
   async getContract(id: number): Promise<Contract | undefined> {
@@ -78,7 +83,7 @@ export class GoogleSheetsStorageAdapter implements IStorage {
     const contract: Contract = {
       ...insertContract,
       id: 0, // ID будет назначен в GoogleSheetsStorage
-      status: this.calculateContractStatus(parseISO(insertContract.endDate.toString())),
+      status: this.calculateContractStatus(parseISO(insertContract.endDate.toString())).status,
       createdAt: now,
       history: [{
         userId,
@@ -156,16 +161,17 @@ export class MemStorage implements IStorage {
     });
   }
 
-  private calculateContractStatus(endDate: Date): "active" | "expiring_soon" | "expired" {
+  private calculateContractStatus(endDate: Date): { status: "active" | "expiring_soon" | "expired"; daysLeft: number } {
     const today = new Date();
     const thirtyDaysFromNow = addDays(today, 30);
+    const daysLeft = differenceInDays(endDate, today);
 
     if (isAfter(today, endDate)) {
-      return "expired";
+      return { status: "expired", daysLeft };
     } else if (isAfter(thirtyDaysFromNow, endDate)) {
-      return "expiring_soon";
+      return { status: "expiring_soon", daysLeft };
     }
-    return "active";
+    return { status: "active", daysLeft };
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -187,19 +193,25 @@ export class MemStorage implements IStorage {
 
   async getContracts(): Promise<Contract[]> {
     const contracts = Array.from(this.contracts.values());
-    return contracts.map(contract => ({
-      ...contract,
-      status: this.calculateContractStatus(parseISO(contract.endDate.toString()))
-    }));
+    return contracts.map(contract => {
+      const { status, daysLeft } = this.calculateContractStatus(parseISO(contract.endDate.toString()));
+      return {
+        ...contract,
+        status,
+        daysLeft
+      };
+    });
   }
 
   async getContract(id: number): Promise<Contract | undefined> {
     const contract = this.contracts.get(id);
     if (!contract) return undefined;
 
+    const { status, daysLeft } = this.calculateContractStatus(parseISO(contract.endDate.toString()));
     return {
       ...contract,
-      status: this.calculateContractStatus(parseISO(contract.endDate.toString()))
+      status,
+      daysLeft
     };
   }
 
@@ -210,7 +222,7 @@ export class MemStorage implements IStorage {
     const contract: Contract = {
       ...insertContract,
       id,
-      status: this.calculateContractStatus(parseISO(insertContract.endDate.toString())),
+      status: this.calculateContractStatus(parseISO(insertContract.endDate.toString())).status,
       createdAt: now,
       history: [{
         userId,

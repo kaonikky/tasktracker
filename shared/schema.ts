@@ -36,6 +36,11 @@ export const contracts = pgTable("contracts", {
   hasND: boolean("has_nd").notNull().default(false),
 });
 
+// Добавляем daysLeft в тип Contract
+export type Contract = typeof contracts.$inferSelect & {
+  daysLeft: number;
+};
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -60,5 +65,4 @@ export const insertContractSchema = createInsertSchema(contracts)
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
-export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = z.infer<typeof insertContractSchema>;

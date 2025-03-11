@@ -230,9 +230,8 @@ export function ContractTable({ onEdit }: ContractTableProps) {
                       contract.status === "expiring_soon" ? "bg-yellow-100 text-yellow-800" :
                       "bg-green-100 text-green-800"}`}
                   >
-                    {contract.status === "expired" ? "Истёк" :
-                     contract.status === "expiring_soon" ? "Истекает" :
-                     "Активен"}
+                    {contract.status === "expired" ? `Истёк ${Math.abs(contract.daysLeft)} дней назад` :
+                     `Истекает через ${contract.daysLeft} дней`}
                   </div>
                 </TableCell>
                 <TableCell
