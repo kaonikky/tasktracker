@@ -104,11 +104,15 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
   const handleCellChange = async (contract: Contract) => {
     if (!editingCell) return;
 
+    // Only make API call if value actually changed
+    if (String(contract[editingCell.field]) === editingCell.value) {
+      setEditingCell(null);
+      return;
+    }
+
     try {
       const updates = {
-        [editingCell.field]: editingCell.field === 'endDate'
-          ? new Date(editingCell.value)
-          : editingCell.value
+        [editingCell.field]: editingCell.value
       };
 
       await updateContract.mutateAsync({
