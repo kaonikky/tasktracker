@@ -109,86 +109,52 @@ export class GoogleSheetsStorage {
     });
 
     const values = response.data.values || [];
-    const today = new Date();
-    console.log('Current date:', {
-      raw: today,
-      formatted: format(today, 'dd.MM.yyyy')
-    });
-
     return values.map((row: any[], index: number) => {
-      const dateStr = row[4] || '';
-      console.log(`\nProcessing contract ${index + 1}:`, { dateString: dateStr });
+      if (!row[4]) return null; // Skip if no date
 
-      const endDate = parse(dateStr, 'dd.MM.yyyy', new Date());
-
+      const endDate = parse(row[4], 'dd.MM.yyyy', new Date());
       if (!isValid(endDate)) {
-        console.error('Invalid date:', dateStr);
+        console.error('Invalid date:', row[4]);
         return null;
       }
 
-      endDate.setHours(23, 59, 59, 999);
-
-      console.log('Parsed date:', {
-        raw: endDate,
-        formatted: format(endDate, 'dd.MM.yyyy HH:mm:ss'),
-        timestamp: endDate.getTime()
-      });
-
-      // Изменяем порядок аргументов - сначала текущая дата, потом конечная
-      // Это даст положительное значение для будущих дат
+      const today = new Date();
       const daysLeft = -differenceInDays(today, endDate);
 
-      console.log('Days calculation:', {
-        endDate: format(endDate, 'dd.MM.yyyy HH:mm:ss'),
-        today: format(today, 'dd.MM.yyyy HH:mm:ss'),
-        daysLeft: daysLeft
-      });
-
-      const contract: Contract = {
+      return {
         id: index + 1,
-        companyName: row[0],
-        inn: row[1],
-        director: row[2],
-        address: row[3],
+        companyName: row[0] || '',
+        inn: row[1] || '',
+        director: row[2] || '',
+        address: row[3] || '',
         endDate: endDate,
-        comments: row[5] || null,
+        comments: row[5] || '',
         hasND: row[6] === 'true',
         lawyerId: parseInt(row[7]) || 0,
         status: row[8] as "active" | "expiring_soon" | "expired",
         history: JSON.parse(row[9] || '[]'),
         createdAt: new Date(),
-        daysLeft: daysLeft
+        daysLeft
       };
-
-      console.log('Created contract:', {
-        id: contract.id,
-        endDate: format(contract.endDate, 'dd.MM.yyyy'),
-        daysLeft: contract.daysLeft
-      });
-
-      return contract;
     }).filter(Boolean) as Contract[];
   }
 
   async createContract(contract: Omit<Contract, 'id'>): Promise<Contract> {
-    const contracts = await this.getAllContracts();
-    const newId = contracts.length + 1;
-
-    // Check for existing INN before creating
-    const existingContract = contracts.find(c => c.inn === contract.inn);
-    if (existingContract) {
-      throw new Error("Контракт с таким ИНН уже существует");
-    }
-
     try {
-      // Форматируем дату в строку DD.MM.YYYY
-      const endDate = new Date(contract.endDate);
-      const endDateStr = format(endDate, "dd.MM.yyyy");
+      const contracts = await this.getAllContracts();
+      const newId = (contracts.length + 1);
 
-      console.log('Creating contract with date:', {
-        originalDate: contract.endDate,
-        formattedDate: endDateStr
-      });
+      // Check for existing INN
+      if (contracts.some(c => c.inn === contract.inn)) {
+        throw new Error("Контракт с таким ИНН уже существует");
+      }
+
+      const endDate = new Date(contract.endDate);
+      if (!isValid(endDate)) {
+        throw new Error("Некорректная дата окончания контракта");
+      }
+
+      const endDateStr = format(endDate, 'dd.MM.yyyy');
 
       await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
@@ -213,6 +179,9 @@ export class GoogleSheetsStorage {
       return { ...contract, id: newId };
     } catch (error) {
       console.error('Error creating contract:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error("Ошибка при создании контракта");
     }
   }
@@ -225,14 +194,8 @@ export class GoogleSheetsStorage {
     const updatedContract = { ...contract, ...updates };
     const rowIndex = id + 1;
 
-    // Форматируем дату в строку DD.MM.YYYY
     const endDate = new Date(updatedContract.endDate);
-    const endDateStr = `${endDate.getDate().toString().padStart(2, '0')}.${(endDate.getMonth() + 1).toString().padStart(2, '0')}.${endDate.getFullYear()}`;
-
-    console.log('Updating contract with date:', {
-      originalDate: updatedContract.endDate,
-      formattedDate: endDateStr
-    });
+    const endDateStr = format(endDate, "dd.MM.yyyy");
 
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: this.spreadsheetId,
@@ -271,7 +234,7 @@ export class GoogleSheetsStorage {
 
     if (userIndex === -1) throw new Error("User not found");
 
-    const rowIndex = userIndex + 2; // Add 2 because row 1 is headers and sheets are 1-indexed
+    const rowIndex = userIndex + 2;
 
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: this.spreadsheetId,

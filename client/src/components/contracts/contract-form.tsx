@@ -25,13 +25,15 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
     resolver: zodResolver(insertContractSchema),
     defaultValues: contract ? {
       ...contract,
-      endDate: contract.endDate instanceof Date ? format(new Date(contract.endDate), "yyyy-MM-dd") : contract.endDate,
+      endDate: contract.endDate instanceof Date 
+        ? format(contract.endDate, "yyyy-MM-dd") 
+        : format(new Date(contract.endDate), "yyyy-MM-dd"),
     } : {
       companyName: "",
       inn: "",
       director: "",
       address: "",
-      endDate: "",
+      endDate: format(new Date(), "yyyy-MM-dd"),
       comments: "",
       lawyerId: 0,
       hasND: false
@@ -53,7 +55,6 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
   }, [dadataError, toast]);
 
   const handleAutofill = () => {
-    console.log('Attempting to autofill with data:', dadataResult);
     if (dadataResult) {
       form.setValue("companyName", dadataResult.name);
       form.setValue("director", dadataResult.director);
@@ -67,14 +68,19 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
 
   const onSubmit = async (data: InsertContract) => {
     try {
+      const formattedData = {
+        ...data,
+        endDate: new Date(data.endDate),
+      };
+
       if (contract) {
-        await updateContract.mutateAsync({ id: contract.id, contract: data });
+        await updateContract.mutateAsync({ id: contract.id, contract: formattedData });
         toast({
           title: "Успех",
           description: "Договор успешно обновлен",
         });
       } else {
-        await createContract.mutateAsync(data);
+        await createContract.mutateAsync(formattedData);
         toast({
           title: "Успех",
           description: "Договор успешно создан",
@@ -91,7 +97,6 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
         variant: "destructive",
       });
 
-      // Если ошибка связана с дублированием ИНН, установим ошибку в поле формы
       if (errorMessage.includes("ИНН уже существует")) {
         form.setError("inn", {
           type: "manual",
