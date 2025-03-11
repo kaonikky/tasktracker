@@ -27,8 +27,8 @@ export function useCreateUser() {
 export function useUpdateUserPassword() {
   return useMutation({
     mutationFn: async ({ userId, newPassword }: { userId: number; newPassword: string }) => {
-      const res = await apiRequest("PUT", `/api/users/${userId}/password`, { password: newPassword });
-      return res.json();
+      await apiRequest("PUT", `/api/users/${userId}/password`, { password: newPassword });
+      // Don't try to parse response as JSON since it's just a status code
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
