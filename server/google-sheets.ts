@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import type { JWT } from 'google-auth-library';
 import { User, Contract } from "@shared/schema";
+import { differenceInDays } from 'date-fns';
 
 export class GoogleSheetsStorage {
   private auth: JWT;
@@ -116,7 +117,7 @@ export class GoogleSheetsStorage {
       // Парсим дату из формата DD.MM.YYYY
       const [day, month, year] = (row[4] || '').split('.');
       const endDate = new Date(Number(year), Number(month) - 1, Number(day));
-      const daysLeft = Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      const daysLeft = differenceInDays(endDate, new Date());
 
       console.log('Processing contract:', {
         endDateStr: row[4],
