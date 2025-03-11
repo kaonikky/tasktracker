@@ -101,6 +101,16 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
     });
   };
 
+  const handleCellClick = (contract: Contract, field: keyof Contract) => {
+    if (field === 'comments') {
+      setEditingCell({
+        id: contract.id,
+        field,
+        value: String(contract[field] || ''),
+      });
+    }
+  };
+
   const handleCellChange = async (contract: Contract) => {
     if (!editingCell) return;
 
@@ -307,8 +317,10 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                     <div className={`w-6 h-6 rounded ${contract.hasND ? 'bg-red-500' : 'border-2 border-gray-300'}`} />
                   </TableCell>
                   <TableCell
-                    className="cursor-pointer"
-                    onDoubleClick={() => handleDoubleClick(contract, 'comments')}
+                    className={`cursor-text ${!editingCell || editingCell.id !== contract.id || editingCell.field !== 'comments'
+                      ? 'hover:bg-muted/50 min-h-[40px] rounded-md border border-dashed border-muted-foreground/25'
+                      : ''}`}
+                    onClick={() => handleCellClick(contract, 'comments')}
                   >
                     {editingCell?.id === contract.id && editingCell.field === 'comments' ? (
                       <Input
@@ -317,9 +329,12 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                         onBlur={() => handleCellChange(contract)}
                         onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
                         autoFocus
+                        className="w-full"
                       />
                     ) : (
-                      contract.comments
+                      <span className="px-2 py-1 block min-h-[28px]">
+                        {contract.comments || 'Нажмите для добавления комментария'}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>
