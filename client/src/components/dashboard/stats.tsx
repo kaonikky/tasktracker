@@ -1,15 +1,29 @@
 import { useContracts } from "@/lib/contracts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarClock, CheckCircle, XCircle } from "lucide-react";
+import { differenceInDays } from "date-fns";
 
 export function Stats() {
   const { data: contracts } = useContracts();
 
-  const stats = {
-    total: contracts?.length || 0,
-    expiringSoon: contracts?.filter(c => c.status === "expiring_soon").length || 0,
-    expired: contracts?.filter(c => c.status === "expired").length || 0,
+  // Вычисляем статистику, используя daysLeft
+  const calculateStats = () => {
+    if (!contracts) return { total: 0, expiringSoon: 0, expired: 0 };
+
+    return contracts.reduce((acc, contract) => {
+      const endDate = new Date(contract.endDate);
+      const today = new Date();
+      const daysLeft = -differenceInDays(today, endDate);
+
+      return {
+        total: acc.total + 1,
+        expiringSoon: acc.expiringSoon + (daysLeft > 0 && daysLeft <= 30 ? 1 : 0),
+        expired: acc.expired + (daysLeft < 0 ? 1 : 0),
+      };
+    }, { total: 0, expiringSoon: 0, expired: 0 });
   };
+
+  const stats = calculateStats();
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
