@@ -14,18 +14,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { format, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, MoreVertical, Trash, ArrowUpDown } from "lucide-react";
+import { Edit, MoreVertical, Trash, History } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Scroll, History } from "lucide-react";
+
 
 type SortConfig = {
   key: keyof Contract | null;
@@ -383,10 +384,12 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                         </DropdownMenuItem>
                         {user?.role === "admin" && (
                           <>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => setHistoryDialog(contract)}>
                               <History className="mr-2 h-4 w-4" />
                               История изменений
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-red-600"
                               onClick={() => setDeleteConfirm(contract.id)}
