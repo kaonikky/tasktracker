@@ -55,6 +55,11 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
+  
+  // Always ensure static files are served in production
+  if (process.env.NODE_ENV === "production") {
+    serveStatic(app);
+  }
 
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client

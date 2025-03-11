@@ -149,7 +149,7 @@ export class GoogleSheetsStorageAdapter implements IStorage {
 }
 
 // Заменяем объект credentials на данные из переменной окружения
-const credentials = JSON.parse(process.env.GOOGLE_SHEETS_CREDENTIALS!);
+const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY!);
 
 export const storage = new GoogleSheetsStorageAdapter(credentials);
 
