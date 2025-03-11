@@ -200,15 +200,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Фильтруем и преобразуем данные
+      const processedRows = new Set(); // Для отслеживания уникальных ИНН
       const contracts = rows.slice(1)
-        .filter(row => row[0] || row[1]) // Пропускаем пустые строки
+        .filter(row => {
+          // Проверяем, что строка не пустая и содержит необходимые данные
+          if (!row[0] || !row[1] || !row[2] || !row[3] || !row[4]) {
+            console.log('Skipping incomplete row:', row);
+            return false;
+          }
+
+          // Проверяем уникальность ИНН
+          const inn = row[1].trim();
+          if (processedRows.has(inn)) {
+            console.log('Skipping duplicate INN:', inn);
+            return false;
+          }
+
+          processedRows.add(inn);
+          return true;
+        })
         .map(row => ({
-          companyName: row[0] || "",
-          inn: row[1] || "",
-          director: row[2] || "",
-          address: row[3] || "",
+          companyName: row[0].trim(),
+          inn: row[1].trim(),
+          director: row[2].trim(),
+          address: row[3].trim(),
           endDate: new Date(row[4]),
-          comments: row[5] || "",
+          comments: row[5]?.trim() || "",
           hasND: row[6]?.toLowerCase() === "true",
           lawyerId: req.user!.id
         }));
@@ -217,11 +235,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Не найдено данных для импорта" });
       }
 
-      console.log('Importing contracts:', contracts.length);
+      console.log('Filtered contracts for import:', contracts.length);
+
       const importedContracts = await Promise.all(
         contracts.map(contract => storage.createContract(contract, req.user!.id))
       );
 
+      console.log('Successfully imported contracts:', importedContracts.length);
       res.json(importedContracts);
     } catch (error) {
       console.error('Google Sheets import error:', error);
