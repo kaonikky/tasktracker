@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { format, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, MoreVertical, Trash, ArrowUpDown } from "lucide-react";
+import { Edit, MoreVertical, Trash, ArrowUpDown, History } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +24,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ContractHistory } from "./contract-history";
 
 type SortConfig = {
   key: keyof Contract | null;
@@ -50,6 +51,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
     key: 'endDate', 
     direction: 'asc' 
   });
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   if (isLoading) {
     return <div>Loading contracts...</div>;
@@ -165,13 +167,21 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="flex justify-between items-center mb-4">
         <Input
           placeholder="Поиск договоров..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
+        <Button
+          variant="outline"
+          onClick={() => setIsHistoryOpen(true)}
+          className="ml-2"
+        >
+          <History className="h-4 w-4 mr-2" />
+          История изменений
+        </Button>
       </div>
 
       <div className="rounded-md border">
@@ -396,6 +406,10 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
           </TableBody>
         </Table>
       </div>
+      <ContractHistory
+        open={isHistoryOpen}
+        onOpenChange={setIsHistoryOpen}
+      />
       <AlertDialog open={deleteConfirm !== null} onOpenChange={() => setDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
