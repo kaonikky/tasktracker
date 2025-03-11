@@ -39,7 +39,7 @@ export class GoogleSheetsStorageAdapter implements IStorage {
   private calculateContractStatus(endDate: Date): { status: "active" | "expiring_soon" | "expired"; daysLeft: number } {
     const today = new Date();
     const thirtyDaysFromNow = addDays(today, 30);
-    const daysLeft = differenceInDays(endDate, today);
+    const daysLeft = differenceInDays(new Date(endDate), today);
 
     if (isAfter(today, endDate)) {
       return { status: "expired", daysLeft };
@@ -164,7 +164,7 @@ export class MemStorage implements IStorage {
   private calculateContractStatus(endDate: Date): { status: "active" | "expiring_soon" | "expired"; daysLeft: number } {
     const today = new Date();
     const thirtyDaysFromNow = addDays(today, 30);
-    const daysLeft = differenceInDays(endDate, today);
+    const daysLeft = differenceInDays(new Date(endDate), today);
 
     if (isAfter(today, endDate)) {
       return { status: "expired", daysLeft };
