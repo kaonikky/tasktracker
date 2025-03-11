@@ -113,8 +113,9 @@ export class GoogleSheetsStorage {
 
     const values = response.data.values || [];
     return values.map((row: any[], index: number) => {
-      // Преобразуем строку даты в объект Date
-      const endDate = new Date(row[4]);
+      // Парсим дату из формата DD.MM.YYYY
+      const [day, month, year] = (row[4] || '').split('.');
+      const endDate = new Date(Number(year), Number(month) - 1, Number(day));
       const daysLeft = Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
       console.log('Processing contract:', {
@@ -145,10 +146,9 @@ export class GoogleSheetsStorage {
     const contracts = await this.getAllContracts();
     const newId = contracts.length + 1;
 
-    // Форматируем дату в строку YYYY-MM-DD
-    const endDateStr = contract.endDate instanceof Date
-      ? contract.endDate.toISOString().split('T')[0]
-      : new Date(contract.endDate).toISOString().split('T')[0];
+    // Форматируем дату в строку DD.MM.YYYY
+    const endDate = new Date(contract.endDate);
+    const endDateStr = `${endDate.getDate().toString().padStart(2, '0')}.${(endDate.getMonth() + 1).toString().padStart(2, '0')}.${endDate.getFullYear()}`;
 
     console.log('Creating contract with date:', {
       originalDate: contract.endDate,
@@ -165,7 +165,7 @@ export class GoogleSheetsStorage {
           contract.inn,
           contract.director,
           contract.address,
-          endDateStr, // Используем отформатированную дату
+          endDateStr,
           contract.comments || '',
           contract.hasND.toString(),
           contract.lawyerId.toString(),
@@ -186,10 +186,9 @@ export class GoogleSheetsStorage {
     const updatedContract = { ...contract, ...updates };
     const rowIndex = id + 1;
 
-    // Форматируем дату в строку YYYY-MM-DD
-    const endDateStr = updatedContract.endDate instanceof Date
-      ? updatedContract.endDate.toISOString().split('T')[0]
-      : new Date(updatedContract.endDate).toISOString().split('T')[0];
+    // Форматируем дату в строку DD.MM.YYYY
+    const endDate = new Date(updatedContract.endDate);
+    const endDateStr = `${endDate.getDate().toString().padStart(2, '0')}.${(endDate.getMonth() + 1).toString().padStart(2, '0')}.${endDate.getFullYear()}`;
 
     console.log('Updating contract with date:', {
       originalDate: updatedContract.endDate,
@@ -206,7 +205,7 @@ export class GoogleSheetsStorage {
           updatedContract.inn,
           updatedContract.director,
           updatedContract.address,
-          endDateStr, // Используем отформатированную дату
+          endDateStr,
           updatedContract.comments || '',
           updatedContract.hasND.toString(),
           updatedContract.lawyerId.toString(),
