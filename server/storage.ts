@@ -135,7 +135,19 @@ export class GoogleSheetsStorageAdapter implements IStorage {
 }
 
 // Заменяем объект credentials на данные из переменной окружения
-const credentials = JSON.parse(process.env.GOOGLE_SHEETS_CREDENTIALS!);
+let credentials;
+try {
+  if (!process.env.GOOGLE_SHEETS_CREDENTIALS) {
+    throw new Error('GOOGLE_SHEETS_CREDENTIALS environment variable is not set');
+  }
+  if (!process.env.GOOGLE_SHEETS_ID && !process.env.VITE_GOOGLE_SHEETS_ID) {
+    throw new Error('GOOGLE_SHEETS_ID or VITE_GOOGLE_SHEETS_ID environment variable is not set');
+  }
+  credentials = JSON.parse(process.env.GOOGLE_SHEETS_CREDENTIALS);
+} catch (error) {
+  console.error('Error initializing storage:', error);
+  throw error;
+}
 
 export const storage = new GoogleSheetsStorageAdapter(credentials);
 

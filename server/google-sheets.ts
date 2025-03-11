@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import type { JWT } from 'google-auth-library';
 import { User, Contract } from "@shared/schema";
+import { hashPassword } from './auth';
 
 export class GoogleSheetsStorage {
   private auth: JWT;
@@ -14,47 +15,67 @@ export class GoogleSheetsStorage {
       credentials.private_key,
       ['https://www.googleapis.com/auth/spreadsheets']
     );
-    
+
     this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-    this.spreadsheetId = process.env.VITE_GOOGLE_SHEETS_ID!;
+    this.spreadsheetId = process.env.GOOGLE_SHEETS_ID || process.env.VITE_GOOGLE_SHEETS_ID;
+
+    if (!this.spreadsheetId) {
+      throw new Error('Neither GOOGLE_SHEETS_ID nor VITE_GOOGLE_SHEETS_ID environment variable is set');
+    }
+    console.log('Initialized Google Sheets with spreadsheet ID:', this.spreadsheetId);
   }
 
   private async initializeSheets() {
-    // Проверяем существование листов и создаем их при необходимости
-    const sheetsInfo = await this.sheets.spreadsheets.get({
-      spreadsheetId: this.spreadsheetId
-    });
+    try {
+      console.log('Initializing Google Sheets...');
+      console.log('Using spreadsheet ID:', this.spreadsheetId);
 
-    const sheets = sheetsInfo.data.sheets;
-    const requiredSheets = ['users', 'contracts'];
-
-    for (const sheetName of requiredSheets) {
-      if (!sheets.find((s: any) => s.properties.title === sheetName)) {
-        await this.sheets.spreadsheets.batchUpdate({
-          spreadsheetId: this.spreadsheetId,
-          requestBody: {
-            requests: [{
-              addSheet: {
-                properties: { title: sheetName }
-              }
-            }]
-          }
-        });
-
-        // Добавляем заголовки для каждого листа
-        const headers = sheetName === 'users' 
-          ? ['username', 'password', 'role']
-          : ['companyName', 'inn', 'director', 'address', 'endDate', 'comments', 'hasND', 'lawyerId', 'status', 'history'];
-
-        await this.sheets.spreadsheets.values.update({
-          spreadsheetId: this.spreadsheetId,
-          range: `${sheetName}!A1:${String.fromCharCode(65 + headers.length - 1)}1`,
-          valueInputOption: 'RAW',
-          requestBody: {
-            values: [headers]
-          }
-        });
+      if (!this.spreadsheetId) {
+        throw new Error('GOOGLE_SHEETS_ID environment variable is not set');
       }
+
+      // Проверяем существование листов и создаем их при необходимости
+      const sheetsInfo = await this.sheets.spreadsheets.get({
+        spreadsheetId: this.spreadsheetId
+      });
+
+      console.log('Successfully connected to Google Sheets');
+      const sheets = sheetsInfo.data.sheets;
+      const requiredSheets = ['users', 'contracts'];
+
+      for (const sheetName of requiredSheets) {
+        if (!sheets.find((s: any) => s.properties.title === sheetName)) {
+          console.log(`Creating sheet: ${sheetName}`);
+          await this.sheets.spreadsheets.batchUpdate({
+            spreadsheetId: this.spreadsheetId,
+            requestBody: {
+              requests: [{
+                addSheet: {
+                  properties: { title: sheetName }
+                }
+              }]
+            }
+          });
+
+          // Добавляем заголовки для каждого листа
+          const headers = sheetName === 'users'
+            ? ['id', 'username', 'password', 'role']
+            : ['id', 'companyName', 'inn', 'director', 'address', 'endDate', 'comments', 'hasND', 'lawyerId', 'status', 'history'];
+
+          await this.sheets.spreadsheets.values.update({
+            spreadsheetId: this.spreadsheetId,
+            range: `${sheetName}!A1:${String.fromCharCode(65 + headers.length - 1)}1`,
+            valueInputOption: 'RAW',
+            requestBody: {
+              values: [headers]
+            }
+          });
+          console.log(`Created sheet ${sheetName} with headers`);
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing Google Sheets:', error);
+      throw error;
     }
   }
 
@@ -82,12 +103,19 @@ export class GoogleSheetsStorage {
     const users = await this.getAllUsers();
     const newId = users.length + 1;
 
+    const hashedPassword = await hashPassword(user.password);
+
+    console.log('Creating new user:', {
+      ...user,
+      password: 'HASHED_PASSWORD' // Не выводим настоящий пароль в логи
+    });
+
     await this.sheets.spreadsheets.values.append({
       spreadsheetId: this.spreadsheetId,
       range: 'users!A2:D2',
       valueInputOption: 'RAW',
       requestBody: {
-        values: [[user.username, user.password, user.role]]
+        values: [[user.username, hashedPassword, user.role]]
       }
     });
 
