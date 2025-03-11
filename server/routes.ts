@@ -7,6 +7,40 @@ import { z } from "zod";
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 
+async function getGoogleSheetsClient() {
+  const serviceAccountStr = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+  if (!serviceAccountStr) {
+    throw new Error("Ключ сервисного аккаунта не настроен");
+  }
+
+  try {
+    // Заменяем возможные экранированные кавычки и переносы строк
+    const cleanedStr = serviceAccountStr
+      .replace(/\\"/g, '"')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r');
+
+    console.log('Attempting to parse service account key...');
+    const serviceAccount = JSON.parse(cleanedStr);
+
+    console.log('Service account email:', serviceAccount.client_email);
+    const auth = new JWT({
+      email: serviceAccount.client_email,
+      key: serviceAccount.private_key,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    });
+
+    return google.sheets({ version: 'v4', auth });
+  } catch (error) {
+    console.error('Error details:', error);
+    if (error instanceof SyntaxError) {
+      console.error('JSON parsing error. Key format is invalid.');
+      throw new Error("Неверный формат ключа сервисного аккаунта. Убедитесь, что это корректный JSON.");
+    }
+    throw new Error("Ошибка при создании клиента Google Sheets: " + (error instanceof Error ? error.message : 'неизвестная ошибка'));
+  }
+}
+
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -19,26 +53,6 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
     return res.status(403).json({ message: "Forbidden" });
   }
   next();
-}
-
-async function getGoogleSheetsClient() {
-  const serviceAccountStr = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!serviceAccountStr) {
-    throw new Error("Ключ сервисного аккаунта не настроен");
-  }
-
-  try {
-    const serviceAccount = JSON.parse(serviceAccountStr);
-    const auth = new JWT({
-      email: serviceAccount.client_email,
-      key: serviceAccount.private_key,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
-    return google.sheets({ version: 'v4', auth });
-  } catch (error) {
-    console.error('Error creating Google Sheets client:', error);
-    throw new Error("Ошибка при создании клиента Google Sheets");
-  }
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
