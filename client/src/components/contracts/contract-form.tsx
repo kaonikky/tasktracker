@@ -91,16 +91,22 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
       const errorMessage = error instanceof Error ? error.message : "Произошла ошибка";
       console.error('Contract operation error:', error);
 
-      toast({
-        title: "Ошибка",
-        description: errorMessage,
-        variant: "destructive",
-      });
-
+      // Если ошибка связана с дублированием ИНН
       if (errorMessage.includes("ИНН уже существует")) {
         form.setError("inn", {
           type: "manual",
           message: "Контракт с таким ИНН уже существует"
+        });
+        toast({
+          title: "Ошибка",
+          description: "Контракт с таким ИНН уже существует",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Ошибка",
+          description: errorMessage,
+          variant: "destructive",
         });
       }
     }

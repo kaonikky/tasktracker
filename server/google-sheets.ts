@@ -145,7 +145,8 @@ export class GoogleSheetsStorage {
       const newId = (contracts.length + 1);
 
       // Check for existing INN
-      if (contracts.some(c => c.inn === contract.inn)) {
+      const existingContract = contracts.find(c => c.inn === contract.inn);
+      if (existingContract) {
         throw new Error("Контракт с таким ИНН уже существует");
       }
 
@@ -179,7 +180,7 @@ export class GoogleSheetsStorage {
       return { ...contract, id: newId };
     } catch (error) {
       console.error('Error creating contract:', error);
-      if (error instanceof Error) {
+      if (error instanceof Error && error.message.includes("ИНН уже существует")) {
         throw error;
       }
       throw new Error("Ошибка при создании контракта");
