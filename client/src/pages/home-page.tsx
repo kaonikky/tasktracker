@@ -35,28 +35,11 @@ export default function HomePage() {
       console.log('Starting import process');
 
       const contracts = await importFromGoogleSheets();
-      console.log(`Retrieved ${contracts.length} contracts from Google Sheets`);
-
-      let importedCount = 0;
-      // Последовательно создаем контракты
-      for (const contract of contracts) {
-        try {
-          await createContract.mutateAsync(contract);
-          importedCount++;
-          console.log(`Successfully imported contract ${importedCount}/${contracts.length}`);
-        } catch (error) {
-          console.error('Error importing contract:', error);
-          toast({
-            title: "Предупреждение",
-            description: `Ошибка при импорте контракта ${importedCount + 1}`,
-            variant: "destructive",
-          });
-        }
-      }
+      console.log(`Successfully imported ${contracts.length} contracts`);
 
       toast({
         title: "Успех",
-        description: `Импортировано ${importedCount} из ${contracts.length} контрактов`,
+        description: `Импортировано ${contracts.length} контрактов`,
       });
     } catch (error) {
       console.error('Import process error:', error);

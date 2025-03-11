@@ -265,7 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log('Валидных контрактов для импорта:', validContracts.length);
+      console.log(`Валидных контрактов для импорта:`, validContracts.length);
 
       if (validContracts.length === 0) {
         return res.status(400).json({ message: "Не найдено валидных данных для импорта" });
