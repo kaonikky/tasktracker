@@ -42,7 +42,7 @@ export class GoogleSheetsStorage {
         });
 
         // Добавляем заголовки для каждого листа
-        const headers = sheetName === 'users' 
+        const headers = sheetName === 'users'
           ? ['username', 'password', 'role']
           : ['companyName', 'inn', 'director', 'address', 'endDate', 'comments', 'hasND', 'lawyerId', 'status', 'history'];
 
@@ -113,8 +113,16 @@ export class GoogleSheetsStorage {
 
     const values = response.data.values || [];
     return values.map((row: any[], index: number) => {
+      // Преобразуем строку даты в объект Date
       const endDate = new Date(row[4]);
       const daysLeft = Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
+      console.log('Processing contract:', {
+        endDateStr: row[4],
+        endDate: endDate,
+        daysLeft: daysLeft
+      });
+
       return {
         id: index + 1,
         companyName: row[0],
@@ -137,6 +145,16 @@ export class GoogleSheetsStorage {
     const contracts = await this.getAllContracts();
     const newId = contracts.length + 1;
 
+    // Форматируем дату в строку YYYY-MM-DD
+    const endDateStr = contract.endDate instanceof Date
+      ? contract.endDate.toISOString().split('T')[0]
+      : new Date(contract.endDate).toISOString().split('T')[0];
+
+    console.log('Creating contract with date:', {
+      originalDate: contract.endDate,
+      formattedDate: endDateStr
+    });
+
     await this.sheets.spreadsheets.values.append({
       spreadsheetId: this.spreadsheetId,
       range: 'contracts!A2:J2',
@@ -147,7 +165,7 @@ export class GoogleSheetsStorage {
           contract.inn,
           contract.director,
           contract.address,
-          contract.endDate.toISOString(),
+          endDateStr, // Используем отформатированную дату
           contract.comments || '',
           contract.hasND.toString(),
           contract.lawyerId.toString(),
@@ -168,6 +186,16 @@ export class GoogleSheetsStorage {
     const updatedContract = { ...contract, ...updates };
     const rowIndex = id + 1;
 
+    // Форматируем дату в строку YYYY-MM-DD
+    const endDateStr = updatedContract.endDate instanceof Date
+      ? updatedContract.endDate.toISOString().split('T')[0]
+      : new Date(updatedContract.endDate).toISOString().split('T')[0];
+
+    console.log('Updating contract with date:', {
+      originalDate: updatedContract.endDate,
+      formattedDate: endDateStr
+    });
+
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: this.spreadsheetId,
       range: `contracts!A${rowIndex}:J${rowIndex}`,
@@ -178,7 +206,7 @@ export class GoogleSheetsStorage {
           updatedContract.inn,
           updatedContract.director,
           updatedContract.address,
-          updatedContract.endDate.toISOString(),
+          endDateStr, // Используем отформатированную дату
           updatedContract.comments || '',
           updatedContract.hasND.toString(),
           updatedContract.lawyerId.toString(),
