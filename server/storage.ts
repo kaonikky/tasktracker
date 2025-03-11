@@ -10,6 +10,8 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
+  updateUserPassword(id: number, hashedPassword: string): Promise<void>;
 
   getContracts(): Promise<Contract[]>;
   getContract(id: number): Promise<Contract | undefined>;
@@ -136,6 +138,13 @@ export class GoogleSheetsStorageAdapter implements IStorage {
 
   async deleteContract(id: number): Promise<void> {
     await this.googleSheets.deleteContract(id);
+  }
+  async getAllUsers(): Promise<User[]> {
+    return this.googleSheets.getAllUsers();
+  }
+
+  async updateUserPassword(id: number, hashedPassword: string): Promise<void> {
+    await this.googleSheets.updateUserPassword(id, hashedPassword);
   }
 }
 
@@ -277,6 +286,19 @@ export class MemStorage implements IStorage {
 
   async deleteContract(id: number): Promise<void> {
     this.contracts.delete(id);
+  }
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async updateUserPassword(id: number, hashedPassword: string): Promise<void> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error("User not found");
+
+    this.users.set(id, {
+      ...user,
+      password: hashedPassword
+    });
   }
   async initialize(): Promise<void> {
     return;

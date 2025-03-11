@@ -58,22 +58,13 @@ export function setupAuth(app: Express) {
     done(null, user);
   });
 
-  app.post("/api/register", async (req, res, next) => {
-    const existingUser = await storage.getUserByUsername(req.body.username);
-    if (existingUser) {
-      return res.status(400).send("Username already exists");
+  // Middleware для проверки роли администратора
+  const requireAdmin = (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+    if (!req.isAuthenticated() || req.user.role !== "admin") {
+      return res.status(403).send("Доступ запрещен");
     }
-
-    const user = await storage.createUser({
-      ...req.body,
-      password: await hashPassword(req.body.password),
-    });
-
-    req.login(user, (err) => {
-      if (err) return next(err);
-      res.status(201).json(user);
-    });
-  });
+    next();
+  };
 
   app.post("/api/login", passport.authenticate("local"), (req, res) => {
     res.status(200).json(req.user);
@@ -89,5 +80,38 @@ export function setupAuth(app: Express) {
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
+  });
+
+  // Новые маршруты для управления пользователями (только для администраторов)
+  app.get("/api/users", requireAdmin, async (req, res) => {
+    const users = await storage.getAllUsers();
+    res.json(users);
+  });
+
+  app.post("/api/users", requireAdmin, async (req, res) => {
+    const existingUser = await storage.getUserByUsername(req.body.username);
+    if (existingUser) {
+      return res.status(400).send("Пользователь с таким именем уже существует");
+    }
+
+    const user = await storage.createUser({
+      ...req.body,
+      password: await hashPassword(req.body.password),
+    });
+
+    res.status(201).json(user);
+  });
+
+  app.put("/api/users/:id/password", requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    const user = await storage.getUser(Number(id));
+    if (!user) {
+      return res.status(404).send("Пользователь не найден");
+    }
+
+    await storage.updateUserPassword(Number(id), await hashPassword(password));
+    res.sendStatus(200);
   });
 }

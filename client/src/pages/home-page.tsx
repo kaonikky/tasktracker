@@ -7,11 +7,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { ContractForm } from "@/components/contracts/contract-form";
 import { Contract } from "@shared/schema";
 import { PlusCircle } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
   const handleEditContract = (contract: Contract) => {
     setSelectedContract(contract);
@@ -32,12 +34,17 @@ export default function HomePage() {
             <span className="text-muted-foreground">
               {user?.username} ({user?.role})
             </span>
+            {user?.role === "admin" && (
+              <Button variant="outline" onClick={() => setLocation("/users")}>
+                Управление пользователями
+              </Button>
+            )}
             <Button 
               variant="outline" 
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
             >
-              {logoutMutation.isPending ? "Logging out..." : "Logout"}
+              {logoutMutation.isPending ? "Выход..." : "Выйти"}
             </Button>
           </div>
         </div>
