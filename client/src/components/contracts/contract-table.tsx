@@ -101,16 +101,6 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
     });
   };
 
-  const handleCellClick = (contract: Contract, field: keyof Contract) => {
-    if (field === 'comments') {
-      setEditingCell({
-        id: contract.id,
-        field,
-        value: String(contract[field] || ''),
-      });
-    }
-  };
-
   const handleCellChange = async (contract: Contract) => {
     if (!editingCell) return;
 
@@ -317,10 +307,18 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                     <div className={`w-6 h-6 rounded ${contract.hasND ? 'bg-red-500' : 'border-2 border-gray-300'}`} />
                   </TableCell>
                   <TableCell
-                    className={`cursor-text ${!editingCell || editingCell.id !== contract.id || editingCell.field !== 'comments'
+                    className={`cursor-text transition-colors ${!editingCell || editingCell.id !== contract.id || editingCell.field !== 'comments'
                       ? 'hover:bg-muted/50 min-h-[40px] rounded-md border border-dashed border-muted-foreground/25'
                       : ''}`}
-                    onClick={() => handleCellClick(contract, 'comments')}
+                    onClick={() => {
+                      if (!editingCell || editingCell.id !== contract.id || editingCell.field !== 'comments') {
+                        setEditingCell({
+                          id: contract.id,
+                          field: 'comments',
+                          value: String(contract.comments || ''),
+                        });
+                      }
+                    }}
                   >
                     {editingCell?.id === contract.id && editingCell.field === 'comments' ? (
                       <Input
@@ -333,7 +331,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                       />
                     ) : (
                       <span className="px-2 py-1 block min-h-[28px]">
-                        {contract.comments || 'Нажмите для добавления комментария'}
+                        {contract.comments || ''}
                       </span>
                     )}
                   </TableCell>
