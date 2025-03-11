@@ -18,6 +18,7 @@ export interface IStorage {
   createContract(contract: InsertContract, userId: number): Promise<Contract>;
   updateContract(id: number, contract: Partial<InsertContract>, userId: number): Promise<Contract>;
   deleteContract(id: number): Promise<void>;
+  getContractByInn(inn: string): Promise<Contract | undefined>; // Added method
 
   sessionStore: session.Store;
   initialize(): Promise<void>;
@@ -81,6 +82,11 @@ export class GoogleSheetsStorageAdapter implements IStorage {
   }
 
   async createContract(insertContract: InsertContract, userId: number): Promise<Contract> {
+    const existingContract = await this.getContractByInn(insertContract.inn);
+    if (existingContract) {
+      throw new Error("Контракт с таким ИНН уже существует");
+    }
+
     const now = new Date();
     const contract: Contract = {
       ...insertContract,
@@ -145,6 +151,10 @@ export class GoogleSheetsStorageAdapter implements IStorage {
 
   async updateUserPassword(id: number, hashedPassword: string): Promise<void> {
     await this.googleSheets.updateUserPassword(id, hashedPassword);
+  }
+  async getContractByInn(inn: string): Promise<Contract | undefined> {
+    const contracts = await this.getContracts();
+    return contracts.find(c => c.inn === inn);
   }
 }
 
@@ -225,6 +235,10 @@ export class MemStorage implements IStorage {
   }
 
   async createContract(insertContract: InsertContract, userId: number): Promise<Contract> {
+    const existingContract = await this.getContractByInn(insertContract.inn);
+    if (existingContract) {
+      throw new Error("Контракт с таким ИНН уже существует");
+    }
     const id = this.currentContractId++;
     const now = new Date();
 
@@ -302,5 +316,8 @@ export class MemStorage implements IStorage {
   }
   async initialize(): Promise<void> {
     return;
+  }
+  async getContractByInn(inn: string): Promise<Contract | undefined> {
+    return Array.from(this.contracts.values()).find(c => c.inn === inn);
   }
 }

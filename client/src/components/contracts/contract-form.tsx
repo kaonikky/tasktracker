@@ -82,11 +82,20 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
       }
       onClose();
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Произошла ошибка";
       toast({
         title: "Ошибка",
-        description: error instanceof Error ? error.message : "Произошла ошибка",
+        description: errorMessage,
         variant: "destructive",
       });
+
+      // Если ошибка связана с дублированием ИНН, установим ошибку в поле формы
+      if (errorMessage.includes("ИНН уже существует")) {
+        form.setError("inn", {
+          type: "manual",
+          message: "Контракт с таким ИНН уже существует"
+        });
+      }
     }
   };
 
