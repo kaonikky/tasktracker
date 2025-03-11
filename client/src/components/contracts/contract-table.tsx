@@ -333,9 +333,9 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {users?.filter(u => u.role === "lawyer").map((lawyer) => (
-                          <SelectItem key={lawyer.id} value={lawyer.id.toString()}>
-                            {lawyer.username}
+                        {users?.map((user) => (
+                          <SelectItem key={user.id} value={user.id.toString()}>
+                            {user.username} ({user.role})
                           </SelectItem>
                         ))}
                       </SelectContent>

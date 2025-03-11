@@ -247,7 +247,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {users?.filter(u => u.role === "lawyer").map((user) => (
+                  {users?.map((user) => (
                     <SelectItem key={user.id} value={user.id.toString()}>
                       {user.username}
                     </SelectItem>
