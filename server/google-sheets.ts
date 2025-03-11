@@ -253,4 +253,22 @@ export class GoogleSheetsStorage {
       range: `contracts!A${rowIndex}:J${rowIndex}`
     });
   }
+
+  async updateUserPassword(id: number, hashedPassword: string): Promise<void> {
+    const users = await this.getAllUsers();
+    const userIndex = users.findIndex(user => user.id === id);
+
+    if (userIndex === -1) throw new Error("User not found");
+
+    const rowIndex = userIndex + 2; // Add 2 because row 1 is headers and sheets are 1-indexed
+
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: this.spreadsheetId,
+      range: `users!B${rowIndex}`,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[hashedPassword]]
+      }
+    });
+  }
 }

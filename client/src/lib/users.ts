@@ -30,5 +30,8 @@ export function useUpdateUserPassword() {
       const res = await apiRequest("PUT", `/api/users/${userId}/password`, { password: newPassword });
       return res.json();
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
   });
 }
