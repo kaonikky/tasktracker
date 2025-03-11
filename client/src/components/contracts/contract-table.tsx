@@ -24,6 +24,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Scroll, History } from "lucide-react";
 
 type SortConfig = {
   key: keyof Contract | null;
@@ -50,6 +52,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
     key: 'endDate', 
     direction: 'asc' 
   });
+  const [historyDialog, setHistoryDialog] = useState<Contract | null>(null);
 
   if (isLoading) {
     return <div>Loading contracts...</div>;
@@ -379,13 +382,19 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                           Редактировать
                         </DropdownMenuItem>
                         {user?.role === "admin" && (
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => setDeleteConfirm(contract.id)}
-                          >
-                            <Trash className="mr-2 h-4 w-4" />
-                            Удалить
-                          </DropdownMenuItem>
+                          <>
+                            <DropdownMenuItem onClick={() => setHistoryDialog(contract)}>
+                              <History className="mr-2 h-4 w-4" />
+                              История изменений
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => setDeleteConfirm(contract.id)}
+                            >
+                              <Trash className="mr-2 h-4 w-4" />
+                              Удалить
+                            </DropdownMenuItem>
+                          </>
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -420,6 +429,44 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog open={historyDialog !== null} onOpenChange={() => setHistoryDialog(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>История изменений</DialogTitle>
+          </DialogHeader>
+          {historyDialog && (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground mb-4">
+                Компания: {historyDialog.companyName}
+              </div>
+              <div className="space-y-2">
+                {historyDialog.history.map((entry, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="font-medium">{entry.username}</span>
+                      <span>•</span>
+                      <span>{new Date(entry.timestamp).toLocaleString()}</span>
+                    </div>
+                    {entry.action === 'created' ? (
+                      <div className="text-sm">Создал договор</div>
+                    ) : (
+                      <div className="space-y-1">
+                        {Object.entries(entry.changes).map(([field, change]) => (
+                          <div key={field} className="text-sm grid grid-cols-3 gap-2">
+                            <span className="font-medium">{field}:</span>
+                            <span className="text-red-500 line-through">{String(change.old)}</span>
+                            <span className="text-green-500">{String(change.new)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
