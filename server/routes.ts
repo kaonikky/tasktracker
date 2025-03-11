@@ -4,6 +4,8 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertContractSchema } from "@shared/schema";
 import { z } from "zod";
+import { google } from 'googleapis';
+import { JWT } from 'google-auth-library';
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) {
@@ -17,6 +19,26 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
     return res.status(403).json({ message: "Forbidden" });
   }
   next();
+}
+
+async function getGoogleSheetsClient() {
+  const serviceAccountStr = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+  if (!serviceAccountStr) {
+    throw new Error("Ключ сервисного аккаунта не настроен");
+  }
+
+  try {
+    const serviceAccount = JSON.parse(serviceAccountStr);
+    const auth = new JWT({
+      email: serviceAccount.client_email,
+      key: serviceAccount.private_key,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    });
+    return google.sheets({ version: 'v4', auth });
+  } catch (error) {
+    console.error('Error creating Google Sheets client:', error);
+    throw new Error("Ошибка при создании клиента Google Sheets");
+  }
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -83,6 +105,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     await storage.deleteContract(Number(req.params.id));
     res.status(204).end();
+  });
+
+  // Import from Google Sheets
+  app.get("/api/sheets/import", requireAuth, async (req, res) => {
+    try {
+      const sheets = await getGoogleSheetsClient();
+      const spreadsheetId = process.env.VITE_GOOGLE_SHEETS_ID;
+
+      if (!spreadsheetId) {
+        return res.status(400).json({ message: "ID таблицы не настроен" });
+      }
+
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: 'A1:Z1000',
+      });
+
+      const rows = response.data.values;
+      if (!rows || rows.length <= 1) {
+        return res.status(400).json({ message: "Таблица пуста или содержит только заголовки" });
+      }
+
+      // Проверяем заголовки
+      const expectedHeaders = ['Название компании', 'ИНН', 'Директор', 'Адрес', 'Дата окончания', 'Комментарии', 'НД'];
+      const headers = rows[0];
+
+      if (!headers || headers.length < expectedHeaders.length) {
+        return res.status(400).json({
+          message: `Неверная структура таблицы. Ожидаемые столбцы: ${expectedHeaders.join(', ')}`
+        });
+      }
+
+      const contracts = rows.slice(1)
+        .filter(row => row[0] || row[1]) // Пропускаем пустые строки
+        .map(row => ({
+          companyName: row[0] || "",
+          inn: row[1] || "",
+          director: row[2] || "",
+          address: row[3] || "",
+          endDate: new Date(row[4]),
+          comments: row[5] || "",
+          hasND: row[6]?.toLowerCase() === "true",
+          lawyerId: req.user.id
+        }));
+
+      if (contracts.length === 0) {
+        return res.status(400).json({ message: "Не найдено данных для импорта" });
+      }
+
+      const importedContracts = await Promise.all(
+        contracts.map(contract => storage.createContract(contract, req.user.id))
+      );
+
+      res.json(importedContracts);
+    } catch (error) {
+      console.error('Google Sheets import error:', error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Ошибка при импорте из Google Sheets"
+      });
+    }
   });
 
   const httpServer = createServer(app);
