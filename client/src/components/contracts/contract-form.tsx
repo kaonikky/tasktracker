@@ -11,6 +11,8 @@ import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { useUsers } from "@/lib/users";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ContractFormProps {
   contract?: Contract | null;
@@ -26,8 +28,8 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
     resolver: zodResolver(insertContractSchema),
     defaultValues: contract ? {
       ...contract,
-      endDate: contract.endDate instanceof Date 
-        ? format(contract.endDate, "yyyy-MM-dd") 
+      endDate: contract.endDate instanceof Date
+        ? format(contract.endDate, "yyyy-MM-dd")
         : format(new Date(contract.endDate), "yyyy-MM-dd"),
     } : {
       companyName: "",
@@ -120,6 +122,8 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
       });
     }
   };
+
+  const { data: users } = useUsers();
 
   return (
     <Form {...form}>
@@ -225,6 +229,31 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
                 />
               </FormControl>
               <FormLabel>НД</FormLabel>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="lawyerId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Юрист</FormLabel>
+              <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите юриста" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {users?.filter(u => u.role === "lawyer").map((user) => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useContracts, useUpdateContract, useDeleteContract } from "@/lib/contracts";
 import { Contract } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { useUsers } from "@/lib/users";
 import {
   Table,
   TableBody,
@@ -20,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
@@ -37,6 +39,7 @@ type EditingCell = {
 export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void }) {
   const { user } = useAuth();
   const { data: contracts, isLoading } = useContracts();
+  const { data: users } = useUsers();
   const updateContract = useUpdateContract();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -69,8 +72,13 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
       let aValue = a[sortConfig.key];
       let bValue = b[sortConfig.key];
 
-      // Приведение к строке для сравнения
-      if (aValue instanceof Date) {
+      // Специальная обработка для сортировки по юристу
+      if (sortConfig.key === 'lawyerId') {
+        const lawyerA = users?.find(u => u.id === a.lawyerId)?.username || '';
+        const lawyerB = users?.find(u => u.id === b.lawyerId)?.username || '';
+        aValue = lawyerA.toLowerCase();
+        bValue = lawyerB.toLowerCase();
+      } else if (aValue instanceof Date) {
         aValue = aValue.getTime();
         bValue = (bValue as Date).getTime();
       } else {
@@ -123,6 +131,26 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
     setEditingCell(null);
   };
 
+  const handleLawyerChange = async (contractId: number, lawyerId: number) => {
+    try {
+      await updateContract.mutateAsync({
+        id: contractId,
+        contract: { lawyerId },
+      });
+
+      toast({
+        title: "Успех",
+        description: "Юрист назначен",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: error instanceof Error ? error.message : "Произошла ошибка при назначении юриста",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div>
       <div className="mb-4">
@@ -160,7 +188,9 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
               <TableHead onClick={() => handleSort('comments')} className="cursor-pointer">
                 Комментарии <ArrowUpDown className="inline h-4 w-4" />
               </TableHead>
-              <TableHead>Юрист</TableHead>
+              <TableHead onClick={() => handleSort('lawyerId')} className="cursor-pointer">
+                Юрист <ArrowUpDown className="inline h-4 w-4" />
+              </TableHead>
               <TableHead className="w-[100px]">Действия</TableHead>
             </TableRow>
           </TableHeader>
@@ -292,7 +322,25 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                       contract.comments
                     )}
                   </TableCell>
-                  <TableCell>{contract.history[0]?.username || 'Не указан'}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={contract.lawyerId?.toString()}
+                      onValueChange={(value) => handleLawyerChange(contract.id, Number(value))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue>
+                          {users?.find(u => u.id === contract.lawyerId)?.username || 'Не назначен'}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users?.filter(u => u.role === "lawyer").map((lawyer) => (
+                          <SelectItem key={lawyer.id} value={lawyer.id.toString()}>
+                            {lawyer.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
