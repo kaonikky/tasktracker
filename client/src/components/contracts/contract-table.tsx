@@ -357,25 +357,23 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <Select
-                      value={contract.lawyerId?.toString()}
-                      onValueChange={(value) => handleLawyerChange(contract.id, Number(value))}
-                      disabled={user?.role !== "admin" && user?.id !== contract.lawyerId}
-                    >
-                      <SelectTrigger>
-                        <SelectValue>
-                          {users?.find(u => u.id === contract.lawyerId)?.username || 'Не назначен'}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users?.map((user) => (
-                          <SelectItem key={user.id} value={user.id.toString()}>
-                            {user.username} ({user.role})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <TableCell
+                    className="cursor-pointer"
+                    onDoubleClick={() => handleDoubleClick(contract, 'lawyerId')}
+                  >
+                    {editingCell?.id === contract.id && editingCell.field === 'lawyerId' ? (
+                      <Input
+                        value={editingCell.value}
+                        onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                        onBlur={() => handleCellChange(contract)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="px-2 py-1 block min-h-[28px]">
+                        {users?.find(u => u.id === contract.lawyerId)?.username || 'Не назначен'}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

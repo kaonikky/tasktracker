@@ -184,7 +184,7 @@ export class MemStorage implements IStorage {
     this.currentUserId = 1;
     this.currentContractId = 1;
     this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+      checkPeriod: 43200000, // 12 hours in milliseconds
     });
   }
 
