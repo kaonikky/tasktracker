@@ -77,7 +77,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
       let aValue = a[sortConfig.key];
       let bValue = b[sortConfig.key];
 
-      // Специальная обработка для сортировки по юристу - REMOVED
+
       if (sortConfig.key === 'endDate') {
         // Convert dates to timestamps for comparison
         aValue = new Date(aValue).getTime();
