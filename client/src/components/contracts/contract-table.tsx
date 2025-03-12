@@ -361,7 +361,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                     <Select
                       value={contract.lawyerId?.toString()}
                       onValueChange={(value) => handleLawyerChange(contract.id, Number(value))}
-                      disabled={user?.role !== "admin" && user?.id !== contract.lawyerId}
+                      disabled={!user}
                     >
                       <SelectTrigger>
                         <SelectValue>
