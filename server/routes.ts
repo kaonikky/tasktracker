@@ -22,18 +22,6 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
-  // Get all users - changed to requireAuth from requireAdmin
-  app.get("/api/users", requireAuth, async (_req, res) => {
-    try {
-      const users = await storage.getAllUsers();
-      console.log('Sending users:', users); // Debug log
-      res.json(users);
-    } catch (error) {
-      console.error('Error getting users:', error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
   // Check if INN exists
   app.get("/api/contracts/check-inn/:inn", requireAuth, async (req, res) => {
     const { inn } = req.params;

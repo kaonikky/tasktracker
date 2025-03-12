@@ -6,15 +6,8 @@ export function useUsers() {
   return useQuery<User[]>({
     queryKey: ["/api/users"],
     queryFn: async () => {
-      try {
-        const response = await apiRequest("GET", "/api/users");
-        const users = await response.json();
-        console.log('Fetched users:', users); // Debug log
-        return users;
-      } catch (error) {
-        console.error('Error fetching users:', error);
-        throw error;
-      }
+      const response = await apiRequest("GET", "/api/users");
+      return response.json();
     },
   });
 }
@@ -35,6 +28,7 @@ export function useUpdateUserPassword() {
   return useMutation({
     mutationFn: async ({ userId, newPassword }: { userId: number; newPassword: string }) => {
       await apiRequest("PUT", `/api/users/${userId}/password`, { password: newPassword });
+      // Don't try to parse response as JSON since it's just a status code
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });

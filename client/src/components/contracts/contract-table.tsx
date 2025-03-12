@@ -40,7 +40,7 @@ type EditingCell = {
 export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void }) {
   const { user } = useAuth();
   const { data: contracts, isLoading } = useContracts();
-  const { data: users, isLoading: isLoadingUsers, error: usersError } = useUsers();
+  const { data: users } = useUsers();
   const updateContract = useUpdateContract();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -53,17 +53,8 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
   });
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  console.log('Current users data:', users); // Debug log
-  console.log('Users loading:', isLoadingUsers); // Debug log
-  console.log('Users error:', usersError); // Debug log
-
-  if (isLoading || isLoadingUsers) {
-    return <div>Loading data...</div>;
-  }
-
-  if (usersError) {
-    console.error('Error loading users:', usersError);
-    return <div>Error loading user data</div>;
+  if (isLoading) {
+    return <div>Loading contracts...</div>;
   }
 
   const handleSort = (key: keyof Contract) => {
@@ -370,7 +361,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                     <Select
                       value={contract.lawyerId?.toString()}
                       onValueChange={(value) => handleLawyerChange(contract.id, Number(value))}
-                      disabled={!user}
+                      disabled={user?.role !== "admin" && user?.id !== contract.lawyerId}
                     >
                       <SelectTrigger>
                         <SelectValue>
@@ -378,14 +369,11 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {users?.map((user) => {
-                          console.log('Rendering user option:', user); // Debug log
-                          return (
-                            <SelectItem key={user.id} value={user.id.toString()}>
-                              {user.username} ({user.role})
-                            </SelectItem>
-                          );
-                        })}
+                        {users?.map((user) => (
+                          <SelectItem key={user.id} value={user.id.toString()}>
+                            {user.username} ({user.role})
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </TableCell>
