@@ -341,7 +341,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                         setEditingCell({
                           id: contract.id,
                           field: 'lawyerId',
-                          value: String(contract.lawyerId || ''),
+                          value: contract.lawyerId || '',
                         });
                       }
                     }}
