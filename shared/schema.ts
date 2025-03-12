@@ -27,8 +27,8 @@ export const contracts = pgTable("contracts", {
   status: text("status", { 
     enum: ["active", "expiring_soon", "expired"] 
   }).notNull(),
-  comments: text("comments"),
-  lawyerId: text("lawyer_id"), // Changed from integer to text and removed reference
+  comments: text("comments").notNull().default(''),
+  lawyerId: text("lawyer_id").notNull().default(''), 
   createdAt: timestamp("created_at").notNull().defaultNow(),
   history: json("history").$type<ContractHistoryEntry[]>().notNull().default([]),
   hasND: boolean("has_nd").notNull().default(false),
@@ -37,12 +37,6 @@ export const contracts = pgTable("contracts", {
 export type Contract = typeof contracts.$inferSelect & {
   daysLeft: number;
 };
-
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  role: true,
-});
 
 export const insertContractSchema = createInsertSchema(contracts)
   .pick({
