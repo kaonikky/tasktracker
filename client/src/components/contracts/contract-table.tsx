@@ -122,7 +122,9 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
 
     try {
       const updates = {
-        [editingCell.field]: editingCell.value
+        [editingCell.field]: editingCell.field === 'lawyerId' 
+          ? Number(editingCell.value) 
+          : editingCell.value
       };
 
       await updateContract.mutateAsync({
@@ -359,12 +361,28 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                   </TableCell>
                   <TableCell
                     className="cursor-pointer"
-                    onDoubleClick={() => handleDoubleClick(contract, 'lawyerId')}
+                    onDoubleClick={() => {
+                      const lawyer = users?.find(u => u.id === contract.lawyerId);
+                      handleDoubleClick(contract, 'lawyerId');
+                      if (lawyer) {
+                        setEditingCell({
+                          id: contract.id,
+                          field: 'lawyerId',
+                          value: lawyer.id.toString()
+                        });
+                      }
+                    }}
                   >
                     {editingCell?.id === contract.id && editingCell.field === 'lawyerId' ? (
                       <Input
+                        type="number"
                         value={editingCell.value}
-                        onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!isNaN(Number(val))) {
+                            setEditingCell({ ...editingCell, value: val });
+                          }
+                        }}
                         onBlur={() => handleCellChange(contract)}
                         onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
                         autoFocus
