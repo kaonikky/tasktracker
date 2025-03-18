@@ -40,6 +40,7 @@ type EditingCell = {
 export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void }) {
   const { user } = useAuth();
   const { data: contracts, isLoading } = useContracts();
+  const { data: users } = useUsers();
   const updateContract = useUpdateContract();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -77,8 +78,13 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
       let aValue = a[sortConfig.key];
       let bValue = b[sortConfig.key];
 
-
-      if (sortConfig.key === 'endDate') {
+      // Специальная обработка для сортировки по юристу
+      if (sortConfig.key === 'lawyerId') {
+        const lawyerA = users?.find(u => u.id === a.lawyerId)?.username || '';
+        const lawyerB = users?.find(u => u.id === b.lawyerId)?.username || '';
+        aValue = lawyerA.toLowerCase();
+        bValue = lawyerB.toLowerCase();
+      } else if (sortConfig.key === 'endDate') {
         // Convert dates to timestamps for comparison
         aValue = new Date(aValue).getTime();
         bValue = new Date(bValue).getTime();
@@ -139,6 +145,25 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
     setEditingCell(null);
   };
 
+  const handleLawyerChange = async (contractId: number, lawyerId: number) => {
+    try {
+      await updateContract.mutateAsync({
+        id: contractId,
+        contract: { lawyerId },
+      });
+
+      toast({
+        title: "Успех",
+        description: "Юрист назначен",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: error instanceof Error ? error.message : "Произошла ошибка при назначении юриста",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div>
@@ -333,18 +358,8 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                     )}
                   </TableCell>
                   <TableCell
-                    className={`cursor-text transition-colors ${!editingCell || editingCell.id !== contract.id || editingCell.field !== 'lawyerId'
-                      ? 'hover:bg-muted/50 min-h-[40px] rounded-md border border-dashed border-muted-foreground/25'
-                      : ''}`}
-                    onClick={() => {
-                      if (!editingCell || editingCell.id !== contract.id || editingCell.field !== 'lawyerId') {
-                        setEditingCell({
-                          id: contract.id,
-                          field: 'lawyerId',
-                          value: contract.lawyerId || '',
-                        });
-                      }
-                    }}
+                    className="cursor-pointer"
+                    onDoubleClick={() => handleDoubleClick(contract, 'lawyerId')}
                   >
                     {editingCell?.id === contract.id && editingCell.field === 'lawyerId' ? (
                       <Input
@@ -353,11 +368,10 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                         onBlur={() => handleCellChange(contract)}
                         onKeyDown={(e) => e.key === 'Enter' && handleCellChange(contract)}
                         autoFocus
-                        className="w-full"
                       />
                     ) : (
                       <span className="px-2 py-1 block min-h-[28px]">
-                        {contract.lawyerId || ''}
+                        {users?.find(u => u.id === contract.lawyerId)?.username || 'Не назначен'}
                       </span>
                     )}
                   </TableCell>

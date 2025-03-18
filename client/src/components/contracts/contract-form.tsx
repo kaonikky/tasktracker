@@ -38,7 +38,7 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
       address: "",
       endDate: "",
       comments: "",
-      lawyerId: "", // Changed from number to string
+      lawyerId: 0,
       hasND: false
     }
   });
@@ -240,9 +240,20 @@ export function ContractForm({ contract, onClose }: ContractFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Юрист</FormLabel>
-              <FormControl>
-                <Input {...field} value={field.value || ''} />
-              </FormControl>
+              <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите юриста" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {users?.map((user) => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

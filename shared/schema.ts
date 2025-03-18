@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   role: text("role", { enum: ["admin", "lawyer"] }).notNull().default("lawyer"),
 });
 
+// Исправляем тип для истории контракта
 export type ContractHistoryEntry = {
   userId: number;
   username: string;
@@ -17,6 +18,7 @@ export type ContractHistoryEntry = {
   timestamp: string;
 };
 
+// В определении таблицы contracts
 export const contracts = pgTable("contracts", {
   id: serial("id").primaryKey(),
   companyName: text("company_name").notNull(),
@@ -27,17 +29,25 @@ export const contracts = pgTable("contracts", {
   status: text("status", { 
     enum: ["active", "expiring_soon", "expired"] 
   }).notNull(),
-  comments: text("comments").notNull().default(''),
-  lawyerId: text("lawyer_id").notNull().default(''), 
+  comments: text("comments"),
+  lawyerId: integer("lawyer_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   history: json("history").$type<ContractHistoryEntry[]>().notNull().default([]),
   hasND: boolean("has_nd").notNull().default(false),
 });
 
+// Добавляем daysLeft в тип Contract
 export type Contract = typeof contracts.$inferSelect & {
   daysLeft: number;
 };
 
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+  role: true,
+});
+
+// Модифицируем схему для вставки контракта, преобразуя строку даты в Date
 export const insertContractSchema = createInsertSchema(contracts)
   .pick({
     companyName: true,

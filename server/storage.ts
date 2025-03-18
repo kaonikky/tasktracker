@@ -94,8 +94,6 @@ export class GoogleSheetsStorageAdapter implements IStorage {
         id: 0, // ID будет назначен в GoogleSheetsStorage
         status: this.calculateContractStatus(new Date(insertContract.endDate)).status,
         createdAt: now,
-        comments: insertContract.comments || '',
-        lawyerId: insertContract.lawyerId || '',
         history: [{
           userId,
           username: (await this.getUser(userId))?.username || "Unknown",
@@ -125,15 +123,8 @@ export class GoogleSheetsStorageAdapter implements IStorage {
       throw new Error("Contract not found");
     }
 
-    // Ensure comments and lawyerId are strings
-    const processedUpdates = {
-      ...updates,
-      comments: updates.comments || existing.comments || '',
-      lawyerId: updates.lawyerId || existing.lawyerId || ''
-    };
-
     const changes: Record<string, { old: any; new: any }> = {};
-    Object.entries(processedUpdates).forEach(([key, value]) => {
+    Object.entries(updates).forEach(([key, value]) => {
       if (existing[key as keyof Contract] !== value) {
         changes[key] = {
           old: existing[key as keyof Contract],
@@ -152,7 +143,7 @@ export class GoogleSheetsStorageAdapter implements IStorage {
 
     const updated: Contract = {
       ...existing,
-      ...processedUpdates,
+      ...updates,
       history: [...existing.history, historyEntry]
     };
 
@@ -264,8 +255,6 @@ export class MemStorage implements IStorage {
       id,
       status: this.calculateContractStatus(parseISO(insertContract.endDate.toString())).status,
       createdAt: now,
-      comments: insertContract.comments || '',
-      lawyerId: insertContract.lawyerId || '',
       history: [{
         userId,
         username: (await this.getUser(userId))?.username || "Unknown",
@@ -289,14 +278,8 @@ export class MemStorage implements IStorage {
       throw new Error("Contract not found");
     }
 
-    const processedUpdates = {
-      ...updates,
-      comments: updates.comments || existing.comments || '',
-      lawyerId: updates.lawyerId || existing.lawyerId || ''
-    };
-
     const changes: Record<string, { old: any; new: any }> = {};
-    Object.entries(processedUpdates).forEach(([key, value]) => {
+    Object.entries(updates).forEach(([key, value]) => {
       if (existing[key as keyof Contract] !== value) {
         changes[key] = {
           old: existing[key as keyof Contract],
@@ -315,7 +298,7 @@ export class MemStorage implements IStorage {
 
     const updated: Contract = {
       ...existing,
-      ...processedUpdates,
+      ...updates,
       history: [...existing.history, historyEntry]
     };
 
