@@ -290,7 +290,14 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                   </TableCell>
                   <TableCell
                     className="cursor-pointer"
-                    onDoubleClick={() => handleDoubleClick(contract, 'endDate')}
+                    onDoubleClick={() => {
+                      const dateStr = format(new Date(contract.endDate), "yyyy-MM-dd");
+                      setEditingCell({
+                        id: contract.id,
+                        field: 'endDate',
+                        value: dateStr
+                      });
+                    }}
                   >
                     {editingCell?.id === contract.id && editingCell.field === 'endDate' ? (
                       <Input
@@ -302,7 +309,7 @@ export function ContractTable({ onEdit }: { onEdit: (contract: Contract) => void
                         autoFocus
                       />
                     ) : (
-                      format(endDate, "dd.MM.yyyy")
+                      format(new Date(contract.endDate), "dd.MM.yyyy")
                     )}
                   </TableCell>
                   <TableCell>
