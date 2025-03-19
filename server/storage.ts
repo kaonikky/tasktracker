@@ -18,7 +18,7 @@ export interface IStorage {
   createContract(contract: InsertContract, userId: number): Promise<Contract>;
   updateContract(id: number, contract: Partial<InsertContract>, userId: number): Promise<Contract>;
   deleteContract(id: number): Promise<void>;
-  getContractByInn(inn: string): Promise<Contract | undefined>; // Added method
+  getContractByInn(inn: string): Promise<Contract | undefined>;
 
   sessionStore: session.Store;
   initialize(): Promise<void>;
@@ -61,7 +61,12 @@ export class GoogleSheetsStorageAdapter implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    return this.googleSheets.createUser(insertUser);
+    // Ensure role is provided and valid
+    const user: InsertUser = {
+      ...insertUser,
+      role: insertUser.role || "lawyer" // Default to lawyer if role is not provided
+    };
+    return this.googleSheets.createUser(user);
   }
 
   async getContracts(): Promise<Contract[]> {
@@ -94,6 +99,8 @@ export class GoogleSheetsStorageAdapter implements IStorage {
         id: 0, // ID будет назначен в GoogleSheetsStorage
         status: this.calculateContractStatus(new Date(insertContract.endDate)).status,
         createdAt: now,
+        comments: insertContract.comments || null, // Ensure comments is never undefined
+        hasND: insertContract.hasND || false, // Ensure hasND is never undefined
         history: [{
           userId,
           username: (await this.getUser(userId))?.username || "Unknown",

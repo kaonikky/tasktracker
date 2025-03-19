@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -34,6 +34,11 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
+    cookie: {
+      maxAge: 12 * 60 * 60 * 1000, // 12 hours in milliseconds
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax"
+    }
   };
 
   app.set("trust proxy", 1);
@@ -59,9 +64,9 @@ export function setupAuth(app: Express) {
   });
 
   // Middleware для проверки роли администратора
-  const requireAdmin = (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+  const requireAdmin = (req: Express.Request, res: Express.Response, next: NextFunction) => {
     if (!req.isAuthenticated() || req.user.role !== "admin") {
-      return res.status(403).send("Доступ запрещен");
+      return res.status(403).json({ message: "Доступ запрещен" });
     }
     next();
   };
@@ -91,7 +96,7 @@ export function setupAuth(app: Express) {
   app.post("/api/users", requireAdmin, async (req, res) => {
     const existingUser = await storage.getUserByUsername(req.body.username);
     if (existingUser) {
-      return res.status(400).send("Пользователь с таким именем уже существует");
+      return res.status(400).json({ message: "Пользователь с таким именем уже существует" });
     }
 
     const user = await storage.createUser({
@@ -108,7 +113,7 @@ export function setupAuth(app: Express) {
 
     const user = await storage.getUser(Number(id));
     if (!user) {
-      return res.status(404).send("Пользователь не найден");
+      return res.status(404).json({ message: "Пользователь не найден" });
     }
 
     await storage.updateUserPassword(Number(id), await hashPassword(password));
